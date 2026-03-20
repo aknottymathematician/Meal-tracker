@@ -63,7 +63,7 @@ DEFAULT_MEALS = {
             {"slot": "Dinner · 7 PM",         "desc": "100 g salad + 2 jowar bhakri + 50 g low fat pan fry paneer + 50 g curd + samah"},
         ],
         "p2": [
-            {"slot": "Pre-training · 6 AM",   "desc": "1 fruit/banana + 200 ml black coffee + Supply 6 salts in 600 ml during training"},
+            {"slot": "Pre-training · 5.30 AM",   "desc": "1 fruit/banana + 200 ml black coffee + Supply 6 salts in 600 ml during training"},
             {"slot": "Breakfast · 8:30 AM",   "desc": "400 ml oats protein smoothie + 30 g boiled chickpeas"},
             {"slot": "Mid-morning · 10 AM",   "desc": "4 egg whites"},
             {"slot": "Lunch · 12:30 PM",      "desc": "100 g salad + 3 jowar bhakri + 100 g low fat pan fry paneer + 100 g plain curd"},
@@ -81,7 +81,7 @@ DEFAULT_MEALS = {
             {"slot": "Dinner · 7 PM",         "desc": "100 g salad + 1 jowar bhakri + 70 g low fat tossed paneer"},
         ],
         "p2": [
-            {"slot": "Pre-training · 6:30 AM","desc": "1 fruit/banana + 200 ml black coffee + Supply 6 salts in 500 ml during training"},
+            {"slot": "Pre-training · 5:30 AM","desc": "1 fruit/banana + 200 ml black coffee + Supply 6 salts in 500 ml during training"},
             {"slot": "Breakfast · 8:30 AM",   "desc": "2 veg sandwiches + 200 ml toned milk + 1 scoop whey"},
             {"slot": "Mid-morning · 10 AM",   "desc": "4 egg whites + 1 vit-C fruit"},
             {"slot": "Lunch · 12:30 PM",      "desc": "100 g salad + 200 g mix veg pulao (rice + quinoa) + 100 g chicken kheema + 200 ml chaas"},
@@ -99,7 +99,7 @@ DEFAULT_MEALS = {
             {"slot": "Dinner · 7 PM",         "desc": "100 g salad + 200 g mix veg pulao (rice + quinoa) + 100 g skyr yogurt + samah"},
         ],
         "p2": [
-            {"slot": "Pre-training · 6 AM",   "desc": "1 fruit/banana + 200 ml black coffee + Supply 6 salts in 600 ml during training"},
+            {"slot": "Pre-training · 5.30 AM",   "desc": "1 fruit/banana + 200 ml black coffee + Supply 6 salts in 600 ml during training"},
             {"slot": "Breakfast · 8:30 AM",   "desc": "400 ml oats protein smoothie + 30 g boiled kala channa"},
             {"slot": "Mid-morning · 10 AM",   "desc": "4 egg whites"},
             {"slot": "Lunch · 12:30 PM",      "desc": "100 g salad + 3 whole wheat roti + 150 g rajma masala + 100 g skyr yogurt"},
@@ -117,7 +117,7 @@ DEFAULT_MEALS = {
             {"slot": "Dinner · 7 PM",         "desc": "100 g salad + 2 whole wheat roti + 100 g rajma masala + 50 g curd + samah"},
         ],
         "p2": [
-            {"slot": "Pre-training · 6:30 AM","desc": "1 fruit/banana + 200 ml black coffee + Supply 6 salts in 500 ml during training"},
+            {"slot": "Pre-training · 5:30 AM","desc": "1 fruit/banana + 200 ml black coffee + Supply 6 salts in 500 ml during training"},
             {"slot": "Breakfast · 8:30 AM",   "desc": "3 bread toast + 200 ml toned milk + 1 scoop whey"},
             {"slot": "Mid-morning · 10 AM",   "desc": "4 egg whites + 1 vit-C fruit"},
             {"slot": "Lunch · 12:30 PM",      "desc": "100 g salad + 3 jowar bhakri + 100 g low fat palak paneer + 100 g plain curd"},
@@ -135,7 +135,7 @@ DEFAULT_MEALS = {
             {"slot": "Dinner · 7 PM",         "desc": "100 g salad + 2 jowar bhakri + 50 g palak paneer + 50 g curd + samah"},
         ],
         "p2": [
-            {"slot": "Pre-training · 6 AM",   "desc": "1 fruit/banana + 200 ml black coffee + Supply 6 salts in 500 ml during training"},
+            {"slot": "Pre-training · 5.30 AM",   "desc": "1 fruit/banana + 200 ml black coffee + Supply 6 salts in 500 ml during training"},
             {"slot": "Breakfast · 8:30 AM",   "desc": "400 ml oats protein smoothie + 30 g boiled chickpeas"},
             {"slot": "Lunch · 12:30 PM",      "desc": "100 g salad + tofu burrito wrap (2 wheat roti + 100 g tofu + 20 g rajma + 75 g veggies + 15 g salsa) + 200 ml chaas"},
             {"slot": "Evening · 4 PM",        "desc": "1 vit-C fruit + 20 g makhana + ½ scoop whey"},
@@ -152,7 +152,7 @@ DEFAULT_MEALS = {
             {"slot": "Dinner · 7 PM",          "desc": "100 g salad + 200 g veg khichdi (75 g rice + 75 g dal + 50 g veggies) + 100 g skyr yogurt + samah"},
         ],
         "p2": [
-            {"slot": "Pre-training — long run","desc": "1 fruit/banana + 200 ml black coffee + Supply 6 salts + energy gel at 45 min + energy gel at 80 min"},
+            {"slot": "Pre-training — long run · 5.30 AM","desc": "1 fruit/banana + 200 ml black coffee + Supply 6 salts + energy gel at 45 min + energy gel at 80 min"},
             {"slot": "Breakfast · 8:30 AM",    "desc": "400 ml oats smoothie + 30 g moong sprouts + 150 g yogurt bowl (100 g yogurt + ½ scoop whey + 1 fruit + 1 tsp chia)"},
             {"slot": "Lunch · 12:30 PM",       "desc": "100 g salad + 250 g veg khichdi OR 250 g chicken biryani + 100 g cucumber raita"},
             {"slot": "Evening · 4 PM",         "desc": "1 vit-C fruit + 20 g makhana + ½ scoop whey"},

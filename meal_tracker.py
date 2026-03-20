@@ -274,12 +274,19 @@ def upload_photo(fb, fn) -> str:
 
 @st.cache_data(ttl=300)
 def load_custom_plan():
-    return {d["id"]: d.get("desc", "") for d in fs_list("meal_plan")}
+    return {d["id"]: d for d in fs_list("meal_plan")}
 
 def current_desc(day, person, idx, custom):
-    return custom.get(f"{day}_{person}_{idx}") or DEFAULT_MEALS[day][person][idx]["desc"]
+    entry = custom.get(f"{day}_{person}_{idx}", {})
+    if isinstance(entry, dict):
+        return entry.get("desc") or DEFAULT_MEALS[day][person][idx]["desc"]
+    return entry or DEFAULT_MEALS[day][person][idx]["desc"]
 
-def slot_label(day, person, idx):
+def slot_label(day, person, idx, custom=None):
+    if custom is not None:
+        entry = custom.get(f"{day}_{person}_{idx}", {})
+        if isinstance(entry, dict) and entry.get("slot"):
+            return entry["slot"]
     return DEFAULT_MEALS[day][person][idx]["slot"]
 
 def meal_count(day, person):
@@ -419,7 +426,7 @@ def check_password() -> bool:
 
 def meal_card(d: date, person: str, idx: int, custom: dict, day_entries: dict):
     day_name    = DAYS[d.weekday()]
-    slot        = slot_label(day_name, person, idx)
+    slot        = slot_label(day_name, person, idx, custom)
     plan_desc   = current_desc(day_name, person, idx, custom)
     entry       = dict(day_entries.get(tk(d, person, idx),
                        {"status": "pending", "comment": "", "image_url": "", "planned_desc": ""}))
@@ -785,21 +792,34 @@ def page_edit_plan():
             st.markdown(person_header(person), unsafe_allow_html=True)
             for i in range(meal_count(day, person)):
                 pk         = f"{day}_{person}_{i}"
-                cur        = current_desc(day, person, i, custom)
+                cur_entry  = custom.get(pk, {})
                 is_custom  = pk in custom
-                title      = slot_label(day, person, i)
+                cur_desc   = current_desc(day, person, i, custom)
+                cur_slot   = slot_label(day, person, i, custom)
+                title      = slot_label(day, person, i, custom)
                 if is_custom:
                     title += "  ·  ✏️ customised"
                 with st.expander(title, expanded=False):
+                    st.caption("Time / slot label")
+                    ns = st.text_input(
+                        "Slot", value=cur_slot, key=f"es_{pk}",
+                        label_visibility="collapsed",
+                        placeholder="e.g. Breakfast · 8:30 AM",
+                    )
+                    st.caption("Meal description")
                     nd = st.text_area(
-                        "Description", value=cur, key=f"ep_{pk}",
+                        "Description", value=cur_desc, key=f"ep_{pk}",
                         height=80, label_visibility="collapsed",
                     )
                     cc1, cc2 = st.columns(2)
                     with cc1:
                         if st.button("Save change", key=f"sv_{pk}", use_container_width=True):
-                            if nd.strip():
-                                fs_set("meal_plan", pk, {"desc": nd.strip()})
+                            if nd.strip() or ns.strip():
+                                payload = {
+                                    "desc": nd.strip() or cur_desc,
+                                    "slot": ns.strip() or cur_slot,
+                                }
+                                fs_set("meal_plan", pk, payload)
                                 load_custom_plan.clear()
                                 st.success("Saved.")
                                 st.rerun()

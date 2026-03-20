@@ -1,10 +1,9 @@
 import streamlit as st
 from datetime import datetime
-import uuid
 import requests
-
-import firebase_admin
-from firebase_admin import credentials, firestore
+import json
+import time
+import jwt  # PyJWT — tiny package, replaces the entire firebase-admin SDK
 
 st.set_page_config(
     page_title="Meal Tracker",
@@ -38,7 +37,6 @@ st.markdown("""
     .progress-bar-fill { height: 8px; border-radius: 20px; background: #1D9E75; }
     .stButton > button { border-radius: 20px; font-size: 13px; padding: 4px 14px; }
     .stTextArea textarea { font-size: 13px; }
-    h1 { font-size: 20px !important; }
     h2 { font-size: 17px !important; }
     .login-wrap { max-width: 320px; margin: 80px auto 0; text-align: center; }
     img { border-radius: 8px; }
@@ -157,11 +155,11 @@ MEALS = {
     },
     "Sun": {
         "p1": [
-            {"slot": "Pre-training · 6 AM",  "desc": "1 fruit/banana + plain water during training"},
-            {"slot": "Breakfast · 8:30 AM",  "desc": "1 scoop whey in 200ml water + 30g kala channa"},
-            {"slot": "Lunch · 12:30 PM",     "desc": "⭐ Enjoyment meal"},
-            {"slot": "Evening · 4 PM",       "desc": "Green tea + 1 vit C fruit"},
-            {"slot": "Dinner · 7 PM",        "desc": "100g salad + 200g veg khichdi (75g rice + 75g dal + 50g veggies) + 100g skyr yogurt + samah"},
+            {"slot": "Pre-training · 6 AM",     "desc": "1 fruit/banana + plain water during training"},
+            {"slot": "Breakfast · 8:30 AM",     "desc": "1 scoop whey in 200ml water + 30g kala channa"},
+            {"slot": "Lunch · 12:30 PM",        "desc": "⭐ Enjoyment meal"},
+            {"slot": "Evening · 4 PM",          "desc": "Green tea + 1 vit C fruit"},
+            {"slot": "Dinner · 7 PM",           "desc": "100g salad + 200g veg khichdi (75g rice + 75g dal + 50g veggies) + 100g skyr yogurt + samah"},
         ],
         "p2": [
             {"slot": "Pre-training (long run)", "desc": "1 fruit/banana + 200ml black coffee + Supply 6 salts + energy gel at 45 min + energy gel at 80 min"},
@@ -175,75 +173,175 @@ MEALS = {
 }
 
 
-# ── Firebase (Firestore only — no Storage) ─────────────────────────────────────
+# ── Firebase REST API (replaces firebase-admin — no heavy SDK needed) ──────────
 
-def init_firebase():
-    if firebase_admin._apps:
-        return
-    cred_dict = dict(st.secrets["firebase_credentials"])
-    cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
-    cred = credentials.Certificate(cred_dict)
-    firebase_admin.initialize_app(cred)
+TOKEN_CACHE = {"token": None, "expires_at": 0}
 
+def get_access_token() -> str:
+    """Get a short-lived OAuth2 token using the service account private key."""
+    now = int(time.time())
+    if TOKEN_CACHE["token"] and now < TOKEN_CACHE["expires_at"] - 60:
+        return TOKEN_CACHE["token"]
 
-def get_db():
-    return firestore.client()
+    creds = st.secrets["firebase_credentials"]
+    private_key = creds["private_key"].replace("\\n", "\n")
 
-
-def load_entry(db, doc_id: str) -> dict:
-    doc = db.collection("meal_entries").document(doc_id).get()
-    return doc.to_dict() if doc.exists else {"status": "pending", "comment": "", "image_url": ""}
-
-
-def save_entry(db, doc_id: str, data: dict):
-    db.collection("meal_entries").document(doc_id).set(data)
-
-
-def load_all_stats(db) -> dict:
-    return {d.id: d.to_dict() for d in db.collection("meal_entries").stream()}
-
-
-def load_snacks(db, day: str, person: str) -> list:
-    docs = (
-        db.collection("snacks")
-        .where("day", "==", day)
-        .where("person", "==", person)
-        .order_by("timestamp")
-        .stream()
+    payload = {
+        "iss": creds["client_email"],
+        "sub": creds["client_email"],
+        "aud": "https://oauth2.googleapis.com/token",
+        "iat": now,
+        "exp": now + 3600,
+        "scope": "https://www.googleapis.com/auth/datastore",
+    }
+    signed = jwt.encode(payload, private_key, algorithm="RS256")
+    resp = requests.post(
+        "https://oauth2.googleapis.com/token",
+        data={
+            "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+            "assertion": signed,
+        },
+        timeout=10,
     )
-    return [{"id": d.id, **d.to_dict()} for d in docs]
+    resp.raise_for_status()
+    data = resp.json()
+    TOKEN_CACHE["token"] = data["access_token"]
+    TOKEN_CACHE["expires_at"] = now + data.get("expires_in", 3600)
+    return TOKEN_CACHE["token"]
 
 
-def add_snack(db, day, person, desc, image_url):
-    db.collection("snacks").add({
-        "day": day, "person": person, "desc": desc,
-        "image_url": image_url,
-        "timestamp": firestore.SERVER_TIMESTAMP,
-    })
+def fs_url(path: str) -> str:
+    project_id = st.secrets["firebase_credentials"]["project_id"]
+    return f"https://firestore.googleapis.com/v1/projects/{project_id}/databases/(default)/documents/{path}"
 
 
-def delete_snack(db, snack_id):
-    db.collection("snacks").document(snack_id).delete()
+def fs_headers() -> dict:
+    return {"Authorization": f"Bearer {get_access_token()}",
+            "Content-Type": "application/json"}
+
+
+def _to_fs(value) -> dict:
+    """Convert a Python value to Firestore REST value format."""
+    if isinstance(value, bool):
+        return {"booleanValue": value}
+    if isinstance(value, int):
+        return {"integerValue": str(value)}
+    if isinstance(value, float):
+        return {"doubleValue": value}
+    if isinstance(value, str):
+        return {"stringValue": value}
+    if isinstance(value, dict):
+        return {"mapValue": {"fields": {k: _to_fs(v) for k, v in value.items()}}}
+    if isinstance(value, list):
+        return {"arrayValue": {"values": [_to_fs(v) for v in value]}}
+    return {"nullValue": None}
+
+
+def _from_fs(value: dict):
+    """Convert a Firestore REST value to a Python value."""
+    if "stringValue"  in value: return value["stringValue"]
+    if "booleanValue" in value: return value["booleanValue"]
+    if "integerValue" in value: return int(value["integerValue"])
+    if "doubleValue"  in value: return value["doubleValue"]
+    if "nullValue"    in value: return None
+    if "mapValue"     in value:
+        return {k: _from_fs(v) for k, v in value["mapValue"].get("fields", {}).items()}
+    if "arrayValue"   in value:
+        return [_from_fs(v) for v in value["arrayValue"].get("values", [])]
+    if "timestampValue" in value: return value["timestampValue"]
+    return None
+
+
+def fs_get(collection: str, doc_id: str) -> dict | None:
+    r = requests.get(fs_url(f"{collection}/{doc_id}"), headers=fs_headers(), timeout=10)
+    if r.status_code == 404:
+        return None
+    r.raise_for_status()
+    fields = r.json().get("fields", {})
+    return {k: _from_fs(v) for k, v in fields.items()}
+
+
+def fs_set(collection: str, doc_id: str, data: dict):
+    fields = {k: _to_fs(v) for k, v in data.items()}
+    r = requests.patch(
+        fs_url(f"{collection}/{doc_id}"),
+        headers=fs_headers(),
+        json={"fields": fields},
+        timeout=10,
+    )
+    r.raise_for_status()
+
+
+def fs_list(collection: str, filters: list[dict] | None = None) -> list[dict]:
+    """Simple collection fetch — returns list of {id, ...fields} dicts."""
+    r = requests.get(fs_url(collection), headers=fs_headers(), timeout=15)
+    if r.status_code == 200:
+        docs = r.json().get("documents", [])
+        result = []
+        for doc in docs:
+            doc_id = doc["name"].split("/")[-1]
+            fields = {k: _from_fs(v) for k, v in doc.get("fields", {}).items()}
+            if filters:
+                if all(fields.get(f["field"]) == f["value"] for f in filters):
+                    result.append({"id": doc_id, **fields})
+            else:
+                result.append({"id": doc_id, **fields})
+        return result
+    return []
+
+
+def fs_add(collection: str, data: dict) -> str:
+    fields = {k: _to_fs(v) for k, v in data.items()}
+    r = requests.post(
+        fs_url(collection),
+        headers=fs_headers(),
+        json={"fields": fields},
+        timeout=10,
+    )
+    r.raise_for_status()
+    return r.json()["name"].split("/")[-1]
+
+
+def fs_delete(collection: str, doc_id: str):
+    requests.delete(fs_url(f"{collection}/{doc_id}"), headers=fs_headers(), timeout=10)
 
 
 # ── Cloudinary upload ──────────────────────────────────────────────────────────
 
 def upload_to_cloudinary(file_bytes: bytes, filename: str) -> str:
-    """Upload image bytes to Cloudinary and return the secure URL."""
-    cloud_name  = st.secrets["cloudinary_cloud_name"]
+    cloud_name    = st.secrets["cloudinary_cloud_name"]
     upload_preset = st.secrets["cloudinary_upload_preset"]
-
-    response = requests.post(
+    r = requests.post(
         f"https://api.cloudinary.com/v1_1/{cloud_name}/image/upload",
         data={"upload_preset": upload_preset},
         files={"file": (filename, file_bytes)},
         timeout=30,
     )
-    if response.status_code == 200:
-        return response.json().get("secure_url", "")
-    else:
-        st.error(f"Photo upload failed: {response.text}")
-        return ""
+    if r.status_code == 200:
+        return r.json().get("secure_url", "")
+    st.error(f"Photo upload failed: {r.text}")
+    return ""
+
+
+# ── Helpers ────────────────────────────────────────────────────────────────────
+
+def load_entry(doc_id: str) -> dict:
+    data = fs_get("meal_entries", doc_id)
+    return data if data else {"status": "pending", "comment": "", "image_url": ""}
+
+
+def save_entry(doc_id: str, data: dict):
+    fs_set("meal_entries", doc_id, data)
+
+
+@st.cache_data(ttl=30)
+def load_all_stats() -> dict:
+    docs = fs_list("meal_entries")
+    return {d["id"]: d for d in docs}
+
+
+def bust_stats_cache():
+    load_all_stats.clear()
 
 
 # ── Auth ───────────────────────────────────────────────────────────────────────
@@ -268,9 +366,9 @@ def check_password() -> bool:
 
 # ── Meal card ──────────────────────────────────────────────────────────────────
 
-def render_meal_card(db, day, person, idx, meal):
+def render_meal_card(day, person, idx, meal):
     doc_id    = f"{day}_{person}_{idx}"
-    entry     = load_entry(db, doc_id)
+    entry     = load_entry(doc_id)
     status    = entry.get("status", "pending")
     comment   = entry.get("comment", "")
     image_url = entry.get("image_url", "")
@@ -290,13 +388,15 @@ def render_meal_card(db, day, person, idx, meal):
         lbl = "✅ Done" if status != "done" else "↩ Undo"
         if st.button(lbl, key=f"done_{doc_id}", use_container_width=True):
             entry["status"] = "done" if status != "done" else "pending"
-            save_entry(db, doc_id, entry)
+            save_entry(doc_id, entry)
+            bust_stats_cache()
             st.rerun()
     with c2:
         lbl = "❌ Skip" if status != "skipped" else "↩ Undo"
         if st.button(lbl, key=f"skip_{doc_id}", use_container_width=True):
             entry["status"] = "skipped" if status != "skipped" else "pending"
-            save_entry(db, doc_id, entry)
+            save_entry(doc_id, entry)
+            bust_stats_cache()
             st.rerun()
     with c3:
         icon = "✏️" if (comment or image_url) else "📝"
@@ -323,13 +423,15 @@ def render_meal_card(db, day, person, idx, meal):
                         url = upload_to_cloudinary(uploaded.read(), uploaded.name)
                     if url:
                         entry["image_url"] = url
-                save_entry(db, doc_id, entry)
+                save_entry(doc_id, entry)
+                bust_stats_cache()
                 st.session_state[f"open_{doc_id}"] = False
                 st.rerun()
         with col_rm:
             if image_url and st.button("Remove photo", key=f"rm_{doc_id}", use_container_width=True):
                 entry["image_url"] = ""
-                save_entry(db, doc_id, entry)
+                save_entry(doc_id, entry)
+                bust_stats_cache()
                 st.rerun()
 
     if comment and not st.session_state.get(f"open_{doc_id}", False):
@@ -338,24 +440,33 @@ def render_meal_card(db, day, person, idx, meal):
     st.markdown("<div style='margin-bottom:6px'></div>", unsafe_allow_html=True)
 
 
-# ── Snacks section ─────────────────────────────────────────────────────────────
+# ── Snacks ─────────────────────────────────────────────────────────────────────
 
-def render_snacks(db, day, person):
+def render_snacks(day, person):
     st.markdown("---")
     st.markdown("**Extra / unplanned snacks**")
 
-    for snack in load_snacks(db, day, person):
-        ts     = snack.get("timestamp")
-        ts_str = ts.strftime("%I:%M %p") if ts and hasattr(ts, "strftime") else ""
+    snacks = fs_list("snacks", filters=[
+        {"field": "day",    "value": day},
+        {"field": "person", "value": person},
+    ])
+
+    for snack in snacks:
+        ts_str = snack.get("timestamp", "")
+        if isinstance(ts_str, str) and "T" in ts_str:
+            try:
+                ts_str = datetime.fromisoformat(ts_str.replace("Z", "+00:00")).strftime("%I:%M %p")
+            except Exception:
+                ts_str = ""
         st.markdown(
-            f'<div class="snack-box">🍽 <b>{snack["desc"]}</b>'
+            f'<div class="snack-box">🍽 <b>{snack.get("desc","")}</b>'
             f'{" · " + ts_str if ts_str else ""}</div>',
             unsafe_allow_html=True
         )
         if snack.get("image_url"):
             st.image(snack["image_url"], use_container_width=True)
         if st.button("Delete", key=f"del_{snack['id']}"):
-            delete_snack(db, snack["id"])
+            fs_delete("snacks", snack["id"])
             st.rerun()
 
     add_key = f"add_{day}_{person}"
@@ -378,7 +489,11 @@ def render_snacks(db, day, person):
                 if img:
                     with st.spinner("Uploading photo…"):
                         img_url = upload_to_cloudinary(img.read(), img.name)
-                add_snack(db, day, person, desc.strip(), img_url)
+                fs_add("snacks", {
+                    "day": day, "person": person,
+                    "desc": desc.strip(), "image_url": img_url,
+                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                })
                 st.session_state[add_key] = False
                 st.rerun()
             else:
@@ -388,16 +503,12 @@ def render_snacks(db, day, person):
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
-    init_firebase()
-
     if not check_password():
         return
 
-    db = get_db()
-
     st.markdown("## 🥗 Meal Tracker")
 
-    all_stats = load_all_stats(db)
+    all_stats = load_all_stats()
     total = done = skipped = 0
     for day in DAYS:
         for p in ["p1", "p2"]:
@@ -440,14 +551,14 @@ def main():
     with tab1:
         st.markdown('<div class="p1-header">Person 1 · Vegetarian</div>', unsafe_allow_html=True)
         for i, meal in enumerate(MEALS[selected_day]["p1"]):
-            render_meal_card(db, selected_day, "p1", i, meal)
-        render_snacks(db, selected_day, "p1")
+            render_meal_card(selected_day, "p1", i, meal)
+        render_snacks(selected_day, "p1")
 
     with tab2:
         st.markdown('<div class="p2-header">Person 2 · Non-veg · Runner</div>', unsafe_allow_html=True)
         for i, meal in enumerate(MEALS[selected_day]["p2"]):
-            render_meal_card(db, selected_day, "p2", i, meal)
-        render_snacks(db, selected_day, "p2")
+            render_meal_card(selected_day, "p2", i, meal)
+        render_snacks(selected_day, "p2")
 
     st.divider()
 
@@ -458,8 +569,8 @@ def main():
                 for i in range(len(MEALS[day][p]))
                 if all_stats.get(f"{day}_{p}_{i}", {}).get("status", "pending") in ("done", "skipped")
             )
-            dt  = sum(len(MEALS[day][p]) for p in ["p1", "p2"])
-            dp  = round(dd / dt * 100) if dt else 0
+            dt = sum(len(MEALS[day][p]) for p in ["p1", "p2"])
+            dp = round(dd / dt * 100) if dt else 0
             marker = " ← today" if day == today_label else ""
             st.markdown(f"**{day}{marker}** — {dd}/{dt} ({dp}%)")
             st.progress(dp / 100)

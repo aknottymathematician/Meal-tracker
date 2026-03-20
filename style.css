@@ -77,7 +77,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body, [class*="css"], .stApp,
-button, input, textarea, select, label, p, div, span {
+button, input, textarea, select, label, p, div {
   font-family: var(--font-body) !important;
   -webkit-font-smoothing: antialiased;
 }
@@ -685,12 +685,16 @@ div[data-testid="stTabs"] [data-baseweb="tab-border"] {
   border-color: rgba(13,148,136,.3) !important;
 }
 
-/* Target Streamlit's label paragraph — safe, doesn't affect icon position */
+/* Target Streamlit's label paragraph only — safe, doesn't affect icon */
 [data-testid="stExpander"] summary p {
-  font-family: var(--font-body) !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   color: var(--ocean-800) !important;
+}
+
+/* Streamlit expander icon uses Material Icons font — must NOT be overridden */
+[data-testid="stExpander"] summary > div > span:first-child {
+  font-family: 'Material Icons', 'Material Icons Outlined' !important;
 }
 
 [data-testid="stExpanderDetails"] {
@@ -698,6 +702,15 @@ div[data-testid="stTabs"] [data-baseweb="tab-border"] {
   padding: 14px 16px !important;
 }
 
+
+/* Restore Material Icons font for Streamlit's icon spans — never override */
+[data-testid="stExpander"] summary span[class*="icon"],
+.material-icons,
+[class*="MaterialIcons"],
+[class*="material-icon"] {
+  font-family: 'Material Icons' !important;
+  font-size: 20px !important;
+}
 /* ── Inputs ───────────────────────────────────────────────── */
 .stTextInput input,
 .stTextArea textarea,

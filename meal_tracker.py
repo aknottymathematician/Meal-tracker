@@ -729,7 +729,7 @@ def page_tracker():
     with t2:
         st.markdown('<div class="p-hdr p2-hdr"><div class="p-avatar p2-av">P2</div>'
                     '<div><div class="p-name p2-name">Jasraj</div>'
-                    '<div class="p-sub">Non-veg · Runner</div></div></div>', unsafe_allow_html=True)
+                    '<div class="p-sub">Non-Vegetarian</div></div></div>', unsafe_allow_html=True)
         for i in range(meal_count(day_name,"p2")):
             meal_card(d,"p2",i,custom,day_ent)
         render_snacks(d,"p2")

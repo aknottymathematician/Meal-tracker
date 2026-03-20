@@ -667,7 +667,8 @@ div[data-testid="stTabs"] [data-baseweb="tab-border"] {
   box-shadow: 0 4px 18px rgba(13,148,136,.45) !important;
 }
 
-/* ── Expanders — Streamlit-specific selectors only ──────── */
+/* ── Expanders ──────────────────────────────────────────── */
+/* NEVER add padding/positioning to summary — breaks Streamlit's icon layout */
 [data-testid="stExpander"] {
   background: rgba(255,255,255,.65) !important;
   border: 1px solid var(--border-md) !important;
@@ -684,23 +685,9 @@ div[data-testid="stTabs"] [data-baseweb="tab-border"] {
   border-color: rgba(13,148,136,.3) !important;
 }
 
-/* Style the summary text without touching list-style or webkit-marker */
-[data-testid="stExpander"] summary {
+/* Target Streamlit's label paragraph — safe, doesn't affect icon position */
+[data-testid="stExpander"] summary p {
   font-family: var(--font-body) !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  color: var(--ocean-800) !important;
-  padding: 13px 16px !important;
-  cursor: pointer !important;
-  transition: background 150ms ease !important;
-  background: transparent !important;
-}
-
-[data-testid="stExpander"] summary:hover {
-  background: rgba(13,148,136,.05) !important;
-}
-
-[data-testid="stExpander"] summary span {
   font-size: 13px !important;
   font-weight: 600 !important;
   color: var(--ocean-800) !important;

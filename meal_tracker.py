@@ -717,18 +717,18 @@ def page_tracker():
     """, unsafe_allow_html=True)
     st.caption(label)
 
-    # Person tabs
-    t1, t2 = st.tabs(["👤  Person 1 · Veg", "🏃  Person 2 · Runner"])
+    # Person tabs·
+    t1, t2 = st.tabs(["🏃  Madhura · Runner", "🏃  Jasraj · Runner"])
     with t1:
         st.markdown('<div class="p-hdr p1-hdr"><div class="p-avatar p1-av">P1</div>'
-                    '<div><div class="p-name p1-name">Person 1</div>'
+                    '<div><div class="p-name p1-name">Madhura</div>'
                     '<div class="p-sub">Vegetarian</div></div></div>', unsafe_allow_html=True)
         for i in range(meal_count(day_name,"p1")):
             meal_card(d,"p1",i,custom,day_ent)
         render_snacks(d,"p1")
     with t2:
         st.markdown('<div class="p-hdr p2-hdr"><div class="p-avatar p2-av">P2</div>'
-                    '<div><div class="p-name p2-name">Person 2</div>'
+                    '<div><div class="p-name p2-name">Jasraj</div>'
                     '<div class="p-sub">Non-veg · Runner</div></div></div>', unsafe_allow_html=True)
         for i in range(meal_count(day_name,"p2")):
             meal_card(d,"p2",i,custom,day_ent)
@@ -748,7 +748,7 @@ def is_due(last_str, days):
 def page_measurements():
     st.markdown('<div class="section-label" style="margin-top:0">Body metrics</div>',
                 unsafe_allow_html=True)
-    t1, t2 = st.tabs(["👤  Person 1", "🏃  Person 2"])
+    t1, t2 = st.tabs(["🏃  Madhura", "🏃  Jasraj"])
     for tab, person in [(t1,"p1"),(t2,"p2")]:
         with tab:
             docs = sorted(fs_list("measurements",
@@ -831,7 +831,7 @@ def page_edit_plan():
                "Past tracking entries always display what was planned at the time they were logged.")
     custom = load_custom_plan()
     day    = st.selectbox("Day", DAYS, label_visibility="collapsed")
-    t1, t2 = st.tabs(["👤  Person 1", "🏃  Person 2"])
+    t1, t2 = st.tabs(["🏃  Madhura", "🏃  Jasraj"])
     for tab, person in [(t1,"p1"),(t2,"p2")]:
         with tab:
             for i in range(meal_count(day, person)):

@@ -758,12 +758,14 @@ def page_measurements():
             # Weight
             lw   = last_date(docs,"weight")
             wdue = is_due(lw,7)
+            wt_badge   = "due-now" if wdue else "due-ok"
+            wt_status  = "Log now" if wdue else "Up to date"
+            wt_lastlog = f'<div class="last-log">Last entry: {lw}</div>' if lw else ""
             st.markdown(
                 f'<div class="meas-section">'
                 f'<div class="meas-title">Weight (weekly)'
-                f'<span class="{"due-now" if wdue else "due-ok"}">'
-                f'{"Log now" if wdue else "Up to date"}</span></div>'
-                f'{"" if not lw else f\'<div class="last-log">Last entry: {lw}</div>\'}'
+                f'<span class="{wt_badge}">{wt_status}</span></div>'
+                f'{wt_lastlog}'
                 f'</div>', unsafe_allow_html=True)
             with st.expander("Log weight", expanded=wdue):
                 wv = st.number_input("Weight (kg)", 30.0, 200.0, step=0.1,
@@ -778,12 +780,14 @@ def page_measurements():
             # Hip & waist
             lh   = last_date(docs,"hip")
             hdue = is_due(lh,14)
+            hw_badge   = "due-now" if hdue else "due-ok"
+            hw_status  = "Log now" if hdue else "Up to date"
+            hw_lastlog = f'<div class="last-log">Last entry: {lh}</div>' if lh else ""
             st.markdown(
                 f'<div class="meas-section" style="margin-top:8px">'
                 f'<div class="meas-title">Hip & Waist (fortnightly)'
-                f'<span class="{"due-now" if hdue else "due-ok"}">'
-                f'{"Log now" if hdue else "Up to date"}</span></div>'
-                f'{"" if not lh else f\'<div class="last-log">Last entry: {lh}</div>\'}'
+                f'<span class="{hw_badge}">{hw_status}</span></div>'
+                f'{hw_lastlog}'
                 f'</div>', unsafe_allow_html=True)
             with st.expander("Log hip & waist", expanded=hdue):
                 hc1, hc2 = st.columns(2)

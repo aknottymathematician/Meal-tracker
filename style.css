@@ -667,8 +667,8 @@ div[data-testid="stTabs"] [data-baseweb="tab-border"] {
   box-shadow: 0 4px 18px rgba(13,148,136,.45) !important;
 }
 
-/* ── Expanders ────────────────────────────────────────────── */
-details {
+/* ── Expanders — Streamlit-specific selectors only ──────── */
+[data-testid="stExpander"] {
   background: rgba(255,255,255,.65) !important;
   border: 1px solid var(--border-md) !important;
   border-radius: var(--r-lg) !important;
@@ -676,33 +676,37 @@ details {
   backdrop-filter: blur(8px) !important;
   box-shadow: var(--sh-xs) !important;
   overflow: hidden !important;
-  transition: box-shadow 180ms ease !important;
+  transition: box-shadow 180ms ease, border-color 180ms ease !important;
 }
 
-details[open] {
+[data-testid="stExpander"]:has(details[open]) {
   box-shadow: var(--sh-sm) !important;
   border-color: rgba(13,148,136,.3) !important;
 }
 
-details summary {
+/* Style the summary text without touching list-style or webkit-marker */
+[data-testid="stExpander"] summary {
   font-family: var(--font-body) !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   color: var(--ocean-800) !important;
   padding: 13px 16px !important;
   cursor: pointer !important;
-  user-select: none !important;
   transition: background 150ms ease !important;
-  list-style: none !important;
+  background: transparent !important;
 }
 
-details summary:hover {
+[data-testid="stExpander"] summary:hover {
   background: rgba(13,148,136,.05) !important;
 }
 
-details summary::-webkit-details-marker { display: none !important; }
+[data-testid="stExpander"] summary span {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--ocean-800) !important;
+}
 
-details > div {
+[data-testid="stExpanderDetails"] {
   border-top: 1px solid var(--border) !important;
   padding: 14px 16px !important;
 }

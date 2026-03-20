@@ -4,9 +4,11 @@ Reads style.css from the same directory for all visual styling.
 """
 
 import streamlit as st
-from datetime import datetime, date
+from datetime import datetime, date, timezone, timedelta
 import requests, time, jwt, calendar as cal_lib
 from pathlib import Path
+
+IST = timezone(timedelta(hours=5, minutes=30))
 
 st.set_page_config(
     page_title="NutriTrack",
@@ -28,7 +30,7 @@ load_css()
 
 # ── Constants ──────────────────────────────────────────────
 
-TODAY = date.today()
+TODAY = datetime.now(IST).date()
 DAYS  = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 # ── Meal plan data ─────────────────────────────────────────
@@ -329,7 +331,7 @@ def person_header(person: str) -> str:
             '<div class="nt-person p1">'
             '<div class="nt-person-avatar">P1</div>'
             '<div>'
-            '<div class="nt-person-name">Person 1</div>'
+            '<div class="nt-person-name">Madhura</div>'
             '<div class="nt-person-role">Vegetarian</div>'
             '</div></div>'
         )
@@ -337,8 +339,8 @@ def person_header(person: str) -> str:
         '<div class="nt-person p2">'
         '<div class="nt-person-avatar">P2</div>'
         '<div>'
-        '<div class="nt-person-name">Person 2</div>'
-        '<div class="nt-person-role">Non-veg · Runner</div>'
+        '<div class="nt-person-name">Jasraj</div>'
+        '<div class="nt-person-role">Non-Vegetarian</div>'
         '</div></div>'
     )
 
@@ -561,7 +563,7 @@ def render_snacks(d: date, person: str):
                     fs_add("snacks", {
                         "date": d.isoformat(), "person": person,
                         "desc": desc.strip(),  "image_url": img_url,
-                        "timestamp": datetime.utcnow().isoformat() + "Z",
+                        "timestamp": datetime.now(IST).isoformat(),
                     })
                     st.session_state[ak] = False
                     st.rerun()
@@ -652,7 +654,7 @@ def page_tracker():
     )
 
     # Person tabs
-    t1, t2 = st.tabs(["👤  Person 1 · Veg", "🏃  Person 2 · Runner"])
+    t1, t2 = st.tabs(["🏃  Madhura · Runner", "🏃  Jasraj · Runner"])
     with t1:
         st.markdown(person_header("p1"), unsafe_allow_html=True)
         for i in range(meal_count(day_name, "p1")):
@@ -678,7 +680,7 @@ def is_due(last_str, days: int) -> bool:
 
 def page_measurements():
     st.markdown(section_label("Body metrics", margin_top=False), unsafe_allow_html=True)
-    t1, t2 = st.tabs(["👤  Person 1", "🏃  Person 2"])
+    t1, t2 = st.tabs(["🏃  Madhura", "🏃  Jasraj"])
     for tab, person in [(t1, "p1"), (t2, "p2")]:
         with tab:
             docs = sorted(
@@ -777,7 +779,7 @@ def page_edit_plan():
     )
     custom = load_custom_plan()
     day    = st.selectbox("Select day", DAYS, label_visibility="collapsed")
-    t1, t2 = st.tabs(["👤  Person 1", "🏃  Person 2"])
+    t1, t2 = st.tabs(["🏃  Madhura", "🏃  Jasraj"])
     for tab, person in [(t1, "p1"), (t2, "p2")]:
         with tab:
             st.markdown(person_header(person), unsafe_allow_html=True)

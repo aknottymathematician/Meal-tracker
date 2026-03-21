@@ -298,18 +298,20 @@ def load_day_plan(day: str, person: str) -> list:
 def save_day_plan(day: str, person: str, meals: list):
     """
     Update session state instantly AND write to Firestore synchronously.
-    Plan edits are infrequent so the ~300ms wait is acceptable.
-    (Background threads cannot access st.secrets, so async writes silently fail.)
+    Also bumps plan_version so fragments always re-execute after a plan change.
     """
     sk = f"_plan_{day}_{person}"
     frozen = [{"slot": m["slot"], "desc": m["desc"]} for m in meals]
     st.session_state[sk] = frozen
+    # Bump version counter — fragments use this as an argument to force re-execution
+    st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
     fs_set("meal_plans", f"{day}_{person}", {"meals": frozen})
 
 def reset_day_plan(day: str, person: str):
     sk = f"_plan_{day}_{person}"
     if sk in st.session_state:
         del st.session_state[sk]
+    st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
     fs_del("meal_plans", f"{day}_{person}")
 
 
@@ -790,11 +792,11 @@ def add_meal_form(d: date, person: str, meals: list):
 # ── Per-person meal list — fragment so note/edit reruns stay isolated ─────
 
 @st.fragment
-def render_person_meals(d: date, person: str, is_future: bool):
+def render_person_meals(d: date, person: str, is_future: bool, plan_version: int = 0):
     """
     Fragment — partial reruns only.
-    Always reads live plan + entries from session state.
-    All st.rerun() inside use scope="fragment" to stay within this fragment.
+    plan_version changes whenever save_day_plan is called, forcing Streamlit
+    to re-execute the fragment body (not serve a cached render).
     """
     day_name = DAYS[d.weekday()]
     meals    = load_day_plan(day_name, person)
@@ -882,11 +884,12 @@ def page_tracker():
 
     t1, t2 = st.tabs(["👤  Person 1 · Veg", "🏃  Person 2 · Runner"])
 
+    pv = st.session_state.get("_plan_version", 0)
     with t1:
-        render_person_meals(d, "p1", is_future)
+        render_person_meals(d, "p1", is_future, pv)
 
     with t2:
-        render_person_meals(d, "p2", is_future)
+        render_person_meals(d, "p2", is_future, pv)
 
 
 # ── Page: Measurements ─────────────────────────────────────
@@ -1098,6 +1101,32 @@ def main():
 
     with st.expander("⚙️  Settings"):
         st.caption("NutriTrack · v7.0")
+
+        st.markdown("**Reset custom meal plans**")
+        st.caption("Deletes any edited plans from Firestore and restores defaults for selected day.")
+        reset_day_sel = st.selectbox("Day to reset", ["— select —"] + DAYS,
+                                     key="reset_day_sel", label_visibility="collapsed")
+        reset_col1, reset_col2 = st.columns(2)
+        with reset_col1:
+            if st.button("Reset Person 1", key="rst_p1_settings",
+                         use_container_width=True):
+                if reset_day_sel != "— select —":
+                    reset_day_plan(reset_day_sel, "p1")
+                    st.success(f"Person 1 {reset_day_sel} reset to default.")
+                    st.rerun()
+                else:
+                    st.warning("Select a day first.")
+        with reset_col2:
+            if st.button("Reset Person 2", key="rst_p2_settings",
+                         use_container_width=True):
+                if reset_day_sel != "— select —":
+                    reset_day_plan(reset_day_sel, "p2")
+                    st.success(f"Person 2 {reset_day_sel} reset to default.")
+                    st.rerun()
+                else:
+                    st.warning("Select a day first.")
+
+        st.divider()
         if st.button("Sign out", type="secondary"):
             st.session_state["auth"] = False; st.rerun()
 

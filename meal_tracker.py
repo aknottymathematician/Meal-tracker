@@ -309,18 +309,19 @@ def save_day_plan(day: str, person: str, meals: list):
 
 def reset_day_plan(day: str, person: str):
     sk = f"_plan_{day}_{person}"
-    if sk in st.session_state:
-        del st.session_state[sk]
-    st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
     fs_del("meal_plans", f"{day}_{person}")
+    st.session_state[sk] = _default_plan(day, person)
+    st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
 
 def reset_all_plans(person: str):
-    """Delete every custom plan doc for a person and bust session cache."""
+    """Delete Firestore docs, write defaults back to session state immediately."""
     for day in DAYS:
         sk = f"_plan_{day}_{person}"
-        if sk in st.session_state:
-            del st.session_state[sk]
+        # Delete from Firestore
         fs_del("meal_plans", f"{day}_{person}")
+        # Immediately seed session state with hardcoded defaults
+        # so the next render never hits the (possibly slow) Firestore read
+        st.session_state[sk] = _default_plan(day, person)
     st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
 
 
@@ -526,71 +527,76 @@ def meal_card_crud(
 
     # ── Action rows ────────────────────────────────────────
     if not is_future:
-        # Row 1: status buttons
-        c1, c2, c3, c4, c5, c6 = st.columns([4, 4, 1, 1, 1, 1])
-        with c1:
-            lbl = "Mark as done" if status != "done" else "↩ Undo done"
+        # Row 1: two status buttons — clear labels
+        r1a, r1b = st.columns(2)
+        with r1a:
+            lbl = "✅  Done" if status != "done" else "↩  Undo"
             if st.button(lbl, key=f"done_{uid}", use_container_width=True):
                 entry["status"] = "done" if status != "done" else "pending"
                 if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
                 update_entry(d.isoformat(), tk(d, person, idx), entry)
                 st.rerun(scope="fragment")
-        with c2:
-            lbl = "Mark as skipped" if status != "skipped" else "↩ Undo skip"
+        with r1b:
+            lbl = "⏭  Skip" if status != "skipped" else "↩  Undo"
             if st.button(lbl, key=f"skip_{uid}", use_container_width=True):
                 entry["status"] = "skipped" if status != "skipped" else "pending"
                 if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
                 update_entry(d.isoformat(), tk(d, person, idx), entry)
                 st.rerun(scope="fragment")
-        with c3:
-            # Note/photo
-            icon = "✏️" if (comment or image_url) else "📝"
-            if st.button(icon, key=f"nbt_{uid}", use_container_width=True):
+        # Row 2: compact icon buttons
+        ic1, ic2, ic3, ic4 = st.columns(4)
+        with ic1:
+            note_icon = "✏️" if (comment or image_url) else "📝"
+            if st.button(note_icon, key=f"nbt_{uid}", use_container_width=True,
+                         help="Note / photo"):
                 st.session_state["active_note"] = uid if not is_noting else None
-        with c4:
-            # Move up
+        with ic2:
             if idx > 0:
-                if st.button("▲", key=f"mup_{uid}", use_container_width=True):
+                if st.button("▲", key=f"mup_{uid}", use_container_width=True,
+                             help="Move up"):
                     meals[idx], meals[idx-1] = meals[idx-1], meals[idx]
                     save_day_plan(day_name, person, meals)
                     st.rerun(scope="fragment")
             else:
-                st.markdown("<div style='height:36px'></div>", unsafe_allow_html=True)
-        with c5:
-            # Move down
+                st.write("")
+        with ic3:
             if idx < len(meals) - 1:
-                if st.button("▼", key=f"mdn_{uid}", use_container_width=True):
+                if st.button("▼", key=f"mdn_{uid}", use_container_width=True,
+                             help="Move down"):
                     meals[idx], meals[idx+1] = meals[idx+1], meals[idx]
                     save_day_plan(day_name, person, meals)
                     st.rerun(scope="fragment")
             else:
-                st.markdown("<div style='height:36px'></div>", unsafe_allow_html=True)
-        with c6:
-            # Edit / delete toggle
-            if st.button("⚙️", key=f"edt_{uid}", use_container_width=True):
+                st.write("")
+        with ic4:
+            if st.button("⚙️", key=f"edt_{uid}", use_container_width=True,
+                         help="Edit / delete"):
                 st.session_state[edit_key] = not is_editing
                 if is_deleting:
                     st.session_state[del_key] = False
 
     else:
-        # Future date — only allow edit/reorder, no tracking
-        c4, c5, c6 = st.columns([1, 1, 1])
-        with c4:
+        # Future date — plan view only, can reorder/edit but no tracking
+        st.caption("📅 Future — plan view only")
+        fi1, fi2, fi3 = st.columns(3)
+        with fi1:
             if idx > 0:
-                if st.button("▲", key=f"mup_f_{uid}", use_container_width=True):
+                if st.button("▲", key=f"mup_f_{uid}", use_container_width=True,
+                             help="Move up"):
                     meals[idx], meals[idx-1] = meals[idx-1], meals[idx]
                     save_day_plan(day_name, person, meals)
                     st.rerun(scope="fragment")
-        with c5:
+        with fi2:
             if idx < len(meals) - 1:
-                if st.button("▼", key=f"mdn_f_{uid}", use_container_width=True):
+                if st.button("▼", key=f"mdn_f_{uid}", use_container_width=True,
+                             help="Move down"):
                     meals[idx], meals[idx+1] = meals[idx+1], meals[idx]
                     save_day_plan(day_name, person, meals)
                     st.rerun(scope="fragment")
-        with c6:
-            if st.button("⚙️", key=f"edt_f_{uid}", use_container_width=True):
+        with fi3:
+            if st.button("⚙️", key=f"edt_f_{uid}", use_container_width=True,
+                         help="Edit / delete"):
                 st.session_state[edit_key] = not is_editing
-
     # ── Note / photo panel ─────────────────────────────────
     if is_noting and not is_future:
         nc = st.text_area("Note", value=comment, key=f"ta_{uid}",

@@ -436,11 +436,10 @@ def meal_card_crud(
 
     uid       = f"{d.isoformat()}_{person}_{idx}"
     edit_key  = f"edit_{uid}"
-    note_key  = f"note_{uid}"
     del_key   = f"del_confirm_{uid}"
 
     is_editing  = st.session_state.get(edit_key, False)
-    is_noting   = st.session_state.get(note_key, False)
+    is_noting   = st.session_state.get("active_note") == uid
     is_deleting = st.session_state.get(del_key, False)
 
     # ── Card HTML ──────────────────────────────────────────
@@ -483,7 +482,7 @@ def meal_card_crud(
             # Note/photo
             icon = "✏️" if (comment or image_url) else "📝"
             if st.button(icon, key=f"nbt_{uid}", use_container_width=True):
-                st.session_state[note_key] = not is_noting
+                st.session_state["active_note"] = uid if not is_noting else None
         with c4:
             # Move up
             if idx > 0:
@@ -545,7 +544,7 @@ def meal_card_crud(
                         url = upload_photo(up.read(), up.name)
                     if url: entry["image_url"] = url
                 update_entry(d.isoformat(), tk(d, person, idx), entry)
-                st.session_state[note_key] = False
+                st.session_state["active_note"] = None
                 st.rerun()
         with cr:
             if image_url and st.button("Remove photo", key=f"rm_{uid}", use_container_width=True):
@@ -681,6 +680,30 @@ def add_meal_form(d: date, person: str, meals: list):
         st.markdown('</div>', unsafe_allow_html=True)
 
 
+# ── Per-person meal list — fragment so note/edit reruns stay isolated ─────
+
+@st.fragment
+def render_person_meals(
+    d: date, person: str, meals: list,
+    day_ent: dict, is_future: bool
+):
+    """
+    Runs as a fragment — button clicks inside only rerun this block,
+    not the whole page. Eliminates the slow full-page rerun on note toggle.
+    """
+    # Re-read meals inside fragment so reorder changes are reflected
+    day_name = DAYS[d.weekday()]
+    meals    = load_day_plan(day_name, person)   # fast: session-state backed
+    day_ent  = load_day_entries(d.isoformat())   # fast: session-state backed
+
+    st.markdown(person_header(person), unsafe_allow_html=True)
+    for i, meal in enumerate(meals):
+        meal_card_crud(d, person, i, meal, meals, day_ent, is_future)
+    add_meal_form(d, person, meals)
+    if not is_future:
+        render_snacks(d, person)
+
+
 # ── Page: Tracker ──────────────────────────────────────────
 
 def page_tracker():
@@ -756,20 +779,10 @@ def page_tracker():
     t1, t2 = st.tabs(["👤  Person 1 · Veg", "🏃  Person 2 · Runner"])
 
     with t1:
-        st.markdown(person_header("p1"), unsafe_allow_html=True)
-        for i, meal in enumerate(p1_meals):
-            meal_card_crud(d, "p1", i, meal, p1_meals, day_ent, is_future)
-        add_meal_form(d, "p1", p1_meals)
-        if not is_future:
-            render_snacks(d, "p1")
+        render_person_meals(d, "p1", p1_meals, day_ent, is_future)
 
     with t2:
-        st.markdown(person_header("p2"), unsafe_allow_html=True)
-        for i, meal in enumerate(p2_meals):
-            meal_card_crud(d, "p2", i, meal, p2_meals, day_ent, is_future)
-        add_meal_form(d, "p2", p2_meals)
-        if not is_future:
-            render_snacks(d, "p2")
+        render_person_meals(d, "p2", p2_meals, day_ent, is_future)
 
 
 # ── Page: Measurements ─────────────────────────────────────

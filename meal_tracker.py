@@ -8,6 +8,7 @@ import streamlit as st
 from datetime import datetime, date, timezone, timedelta
 import requests, time, jwt, calendar as cal_lib
 from pathlib import Path
+import threading
 
 IST   = timezone(timedelta(hours=5, minutes=30))
 TODAY = datetime.now(IST).date()
@@ -277,23 +278,42 @@ def upload_photo(fb, fn) -> str:
 
 # ── Meal plan — dynamic, stored in Firestore ───────────────
 
-@st.cache_data(ttl=60)
-def load_day_plan(day: str, person: str) -> list:
-    """Load meal list for a day/person. Falls back to DEFAULT_MEALS."""
-    doc = fs_get("meal_plans", f"{day}_{person}")
-    if doc and doc.get("meals"):
-        meals = doc["meals"]
-        # Ensure each item is a proper dict with slot + desc
-        return [{"slot": m.get("slot", ""), "desc": m.get("desc", "")} for m in meals]
+def _default_plan(day: str, person: str) -> list:
     return [{"slot": m["slot"], "desc": m["desc"]} for m in DEFAULT_MEALS[day][person]]
 
+def load_day_plan(day: str, person: str) -> list:
+    """Session-state backed — instant on rerun, loads Firestore once per session."""
+    sk = f"_plan_{day}_{person}"
+    if sk not in st.session_state:
+        doc = fs_get("meal_plans", f"{day}_{person}")
+        if doc and doc.get("meals"):
+            st.session_state[sk] = [
+                {"slot": m.get("slot", ""), "desc": m.get("desc", "")}
+                for m in doc["meals"]
+            ]
+        else:
+            st.session_state[sk] = _default_plan(day, person)
+    return st.session_state[sk]
+
+def _write_plan_bg(day: str, person: str, meals: list):
+    """Background thread: write to Firestore without blocking UI."""
+    try:
+        fs_set("meal_plans", f"{day}_{person}", {"meals": meals})
+    except Exception:
+        pass  # Silent — session state already has the correct value
+
 def save_day_plan(day: str, person: str, meals: list):
-    fs_set("meal_plans", f"{day}_{person}", {"meals": meals})
-    load_day_plan.clear()
+    """Update session state instantly, then write to Firestore in background."""
+    sk = f"_plan_{day}_{person}"
+    st.session_state[sk] = list(meals)
+    threading.Thread(target=_write_plan_bg, args=(day, person, list(meals)),
+                     daemon=True).start()
 
 def reset_day_plan(day: str, person: str):
+    sk = f"_plan_{day}_{person}"
+    if sk in st.session_state:
+        del st.session_state[sk]
     fs_del("meal_plans", f"{day}_{person}")
-    load_day_plan.clear()
 
 
 # ── Tracking ───────────────────────────────────────────────
@@ -301,12 +321,12 @@ def reset_day_plan(day: str, person: str):
 def tk(d: date, person, idx):
     return f"{d.isoformat()}_{person}_{idx}"
 
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=60)
 def load_all_tracking() -> dict:
     return {doc["id"]: doc for doc in fs_list("tracking")}
 
 def load_day_entries(date_str: str) -> dict:
-    """Session-state backed cache — instant on rerun after first load."""
+    """Session-state backed — instant on rerun."""
     sk = f"_de_{date_str}"
     if sk not in st.session_state:
         st.session_state[sk] = {
@@ -316,14 +336,23 @@ def load_day_entries(date_str: str) -> dict:
         }
     return st.session_state[sk]
 
+def _write_entry_bg(doc_id: str, entry: dict):
+    """Background thread: write tracking entry to Firestore."""
+    try:
+        fs_set("tracking", doc_id, entry)
+    except Exception:
+        pass
+
 def update_entry(date_str: str, doc_id: str, entry: dict):
-    """Write entry to session state first (instant), then Firestore."""
+    """Update session state instantly, fire Firestore write in background."""
     sk = f"_de_{date_str}"
     if sk not in st.session_state:
         st.session_state[sk] = {}
-    st.session_state[sk][doc_id] = entry
-    fs_set("tracking", doc_id, entry)
+    st.session_state[sk][doc_id] = dict(entry)
+    # Also invalidate the all-tracking cache lazily
     load_all_tracking.clear()
+    threading.Thread(target=_write_entry_bg, args=(doc_id, dict(entry)),
+                     daemon=True).start()
 
 def bust_tracking(date_str: str):
     sk = f"_de_{date_str}"
@@ -557,14 +586,7 @@ def meal_card_crud(
                     else:
                         st.error("Upload failed — please try again.")
                         st.stop()
-                # Write to session state first, Firestore second
-                doc_id = tk(d, person, idx)
-                sk = f"_de_{d.isoformat()}"
-                if sk not in st.session_state:
-                    st.session_state[sk] = {}
-                st.session_state[sk][doc_id] = dict(entry)  # snapshot before rerun
-                fs_set("tracking", doc_id, entry)
-                load_all_tracking.clear()
+                update_entry(d.isoformat(), tk(d, person, idx), entry)
                 st.session_state["active_note"] = None
                 st.rerun()
         with cr:
@@ -647,7 +669,9 @@ def render_snacks(d: date, person: str):
             if st.session_state.get(simg_key):
                 st.image(s["image_url"], use_container_width=True)
         if st.button("Remove", key=f"del_{s['id']}"):
-            fs_del("snacks", s["id"]); st.rerun()
+            threading.Thread(target=fs_del, args=("snacks", s["id"]),
+                             daemon=True).start()
+            st.rerun()
 
     if d <= TODAY:
         ak = f"add_{d.isoformat()}_{person}"

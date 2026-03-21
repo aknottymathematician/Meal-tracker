@@ -611,24 +611,62 @@ def meal_card_crud(
 
     # ── Inline edit panel ──────────────────────────────────
     if is_editing:
+        # Use session-state-backed draft values so widget state never goes stale.
+        # On first open, seed from current plan. On rerun, keep draft as-is.
+        draft_slot_key = f"draft_slot_{uid}"
+        draft_desc_key = f"draft_desc_{uid}"
+        if draft_slot_key not in st.session_state:
+            st.session_state[draft_slot_key] = slot
+        if draft_desc_key not in st.session_state:
+            st.session_state[draft_desc_key] = plan_desc
+
         st.markdown('<div style="background:rgba(13,148,136,.04);border:1px solid var(--border-md);'
                     'border-radius:var(--r-md);padding:12px;margin-top:6px">', unsafe_allow_html=True)
-        ns = st.text_input("Slot / time", value=slot, key=f"nes_{uid}",
-                           label_visibility="collapsed",
-                           placeholder="Slot / time label (e.g. Breakfast · 8:30 AM)")
-        nd = st.text_area("Description", value=plan_desc, key=f"ned_{uid}",
-                          label_visibility="collapsed",
-                          placeholder="Meal description", height=72)
+
+        # Use on_change to keep draft in sync without needing Save to read widget value
+        def _sync_slot():
+            st.session_state[draft_slot_key] = st.session_state[f"nes_{uid}"]
+        def _sync_desc():
+            st.session_state[draft_desc_key] = st.session_state[f"ned_{uid}"]
+
+        st.text_input("Slot / time",
+                      value=st.session_state[draft_slot_key],
+                      key=f"nes_{uid}",
+                      label_visibility="collapsed",
+                      placeholder="e.g. Breakfast · 8:30 AM",
+                      on_change=_sync_slot)
+        st.text_area("Description",
+                     value=st.session_state[draft_desc_key],
+                     key=f"ned_{uid}",
+                     label_visibility="collapsed",
+                     placeholder="Meal description",
+                     height=72,
+                     on_change=_sync_desc)
+
         e1, e2, e3 = st.columns(3)
         with e1:
             if st.button("Save", key=f"esv_{uid}", use_container_width=True):
-                if ns.strip() or nd.strip():
-                    meals[idx] = {"slot": ns.strip() or slot, "desc": nd.strip() or plan_desc}
-                    save_day_plan(day_name, person, meals)
-                    st.session_state[edit_key] = False
-                    st.rerun(scope="fragment")
+                new_slot = st.session_state.get(draft_slot_key, slot).strip() or slot
+                new_desc = st.session_state.get(draft_desc_key, plan_desc).strip() or plan_desc
+                # Update the live plan
+                live = load_day_plan(day_name, person)
+                if idx < len(live):
+                    live[idx] = {"slot": new_slot, "desc": new_desc}
+                    save_day_plan(day_name, person, live)
+                # Clear draft + close panel
+                st.session_state.pop(draft_slot_key, None)
+                st.session_state.pop(draft_desc_key, None)
+                # Clear widget state so text inputs re-seed from new plan on next open
+                st.session_state.pop(f"nes_{uid}", None)
+                st.session_state.pop(f"ned_{uid}", None)
+                st.session_state[edit_key] = False
+                st.rerun(scope="fragment")
         with e2:
             if st.button("Cancel", key=f"ecn_{uid}", use_container_width=True):
+                st.session_state.pop(draft_slot_key, None)
+                st.session_state.pop(draft_desc_key, None)
+                st.session_state.pop(f"nes_{uid}", None)
+                st.session_state.pop(f"ned_{uid}", None)
                 st.session_state[edit_key] = False
                 st.rerun(scope="fragment")
         with e3:
@@ -964,19 +1002,37 @@ def page_edit_plan():
                 is_changed = i >= len(default) or meal != default[i]
                 title = meal["slot"] + ("  ·  ✏️" if is_changed else "")
                 with st.expander(title, expanded=False):
-                    ns = st.text_input("Slot / time", value=meal["slot"], key=f"es_{pk}",
-                                       label_visibility="collapsed",
-                                       placeholder="e.g. Breakfast · 8:30 AM")
-                    nd = st.text_area("Description", value=meal["desc"], key=f"ed_{pk}",
-                                      height=80, label_visibility="collapsed")
+                    dsk = f"dslot_{pk}"
+                    ddk = f"ddesc_{pk}"
+                    if dsk not in st.session_state:
+                        st.session_state[dsk] = meal["slot"]
+                    if ddk not in st.session_state:
+                        st.session_state[ddk] = meal["desc"]
+                    def _ss(): st.session_state[dsk] = st.session_state[f"es_{pk}"]
+                    def _sd(): st.session_state[ddk] = st.session_state[f"ed_{pk}"]
+                    st.text_input("Slot / time",
+                                  value=st.session_state[dsk],
+                                  key=f"es_{pk}",
+                                  label_visibility="collapsed",
+                                  placeholder="e.g. Breakfast · 8:30 AM",
+                                  on_change=_ss)
+                    st.text_area("Description",
+                                 value=st.session_state[ddk],
+                                 key=f"ed_{pk}",
+                                 height=80,
+                                 label_visibility="collapsed",
+                                 on_change=_sd)
                     cc1, cc2, cc3 = st.columns(3)
                     with cc1:
                         if st.button("Save", key=f"sv_{pk}", use_container_width=True):
-                            if ns.strip() or nd.strip():
-                                meals[i] = {"slot": ns.strip() or meal["slot"],
-                                            "desc": nd.strip() or meal["desc"]}
-                                save_day_plan(day, person, meals)
-                                st.success("Saved."); st.rerun()
+                            new_slot = st.session_state.get(dsk, meal["slot"]).strip() or meal["slot"]
+                            new_desc = st.session_state.get(ddk, meal["desc"]).strip() or meal["desc"]
+                            meals[i] = {"slot": new_slot, "desc": new_desc}
+                            save_day_plan(day, person, meals)
+                            # Clear widget + draft state so expander re-seeds on reopen
+                            for k in [dsk, ddk, f"es_{pk}", f"ed_{pk}"]:
+                                st.session_state.pop(k, None)
+                            st.success("Saved."); st.rerun()
                     with cc2:
                         if st.button("▲ Move up", key=f"mup_{pk}", use_container_width=True):
                             if i > 0:

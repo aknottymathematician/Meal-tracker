@@ -1,949 +1,1107 @@
-/* ============================================================
-   NutriTrack · Ocean Calm Theme
-   Blue-green wellness palette, aggressive Streamlit overrides
-   ============================================================ */
-
-@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&family=DM+Serif+Display:ital@0;1&display=swap');
-
-/* ── Tokens ───────────────────────────────────────────────── */
-:root {
-  /* Ocean palette */
-  --ocean-50:   #F0FDFA;
-  --ocean-100:  #CCFBF1;
-  --ocean-200:  #99F6E4;
-  --ocean-300:  #5EEAD4;
-  --ocean-400:  #2DD4BF;
-  --ocean-500:  #14B8A6;
-  --ocean-600:  #0D9488;
-  --ocean-700:  #0F766E;
-  --ocean-800:  #115E59;
-  --ocean-900:  #134E4A;
-  --ocean-950:  #0A2E2B;
-
-  /* Sky blue accents */
-  --sky-50:  #F0F9FF;
-  --sky-100: #E0F2FE;
-  --sky-200: #BAE6FD;
-  --sky-300: #7DD3FC;
-  --sky-400: #38BDF8;
-  --sky-500: #0EA5E9;
-  --sky-600: #0284C7;
-  --sky-700: #0369A1;
-
-  /* Neutral (cool-tinted) */
-  --n0:   #FFFFFF;
-  --n50:  #F7FFFE;
-  --n100: #EEF9F7;
-  --n150: #E2F4F1;
-  --n200: #C8E8E3;
-  --n300: #9ACEC7;
-  --n400: #6AADA4;
-  --n500: #4A8880;
-  --n600: #356560;
-  --n700: #254845;
-  --n800: #162C2A;
-  --n900: #0D1A19;
-
-  /* Semantic */
-  --success-bg:  #ECFDF5; --success-bd: #6EE7B7; --success-tx: #065F46;
-  --warn-bg:     #FFFBEB; --warn-bd:    #FCD34D; --warn-tx:    #78350F;
-  --error-bg:    #FFF1F2; --error-bd:   #FDA4AF; --error-tx:   #9F1239;
-
-  /* Typography */
-  --font-display: 'DM Serif Display', Georgia, serif;
-  --font-body:    'Nunito', system-ui, sans-serif;
-
-  /* Spacing */
-  --sp1:2px; --sp2:4px; --sp3:8px; --sp4:12px; --sp5:16px;
-  --sp6:20px; --sp7:24px; --sp8:32px; --sp9:40px; --sp10:48px;
-
-  /* Radius */
-  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 22px; --r-full: 9999px;
-
-  /* Shadows */
-  --sh-xs: 0 1px 3px rgba(10,46,43,.06);
-  --sh-sm: 0 2px 8px rgba(10,46,43,.08), 0 1px 2px rgba(10,46,43,.04);
-  --sh-md: 0 4px 20px rgba(10,46,43,.10), 0 1px 4px rgba(10,46,43,.06);
-  --sh-lg: 0 8px 40px rgba(10,46,43,.12);
-
-  /* App */
-  --app-bg:   #DFF5F1;
-  --surface:  #FFFFFF;
-  --border:   rgba(13,148,136,.18);
-  --border-md:rgba(13,148,136,.30);
-}
-
-/* ── Base ─────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; }
-
-html, body, [class*="css"], .stApp,
-button, input, textarea, select, label, p, div {
-  font-family: var(--font-body) !important;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* App background — gradient wash */
-.stApp {
-  background: linear-gradient(160deg,
-    #C8EDE8 0%,
-    #D9F2EE 30%,
-    #E4F7F4 60%,
-    #D0EDE9 100%) !important;
-  min-height: 100vh;
-}
-
-.block-container {
-  padding: 1.5rem 1.25rem 5rem !important;
-  max-width: 700px !important;
-  margin: 0 auto !important;
-}
-
-/* Hide default streamlit chrome */
-#MainMenu, footer, header { visibility: hidden !important; }
-
-/* ── App header ───────────────────────────────────────────── */
-.nt-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 22px;
-  background: linear-gradient(135deg, var(--ocean-900) 0%, var(--ocean-700) 100%);
-  border-radius: var(--r-xl);
-  margin-bottom: 20px;
-  box-shadow: var(--sh-md), inset 0 1px 0 rgba(255,255,255,.08);
-}
-
-.nt-logo {
-  width: 44px; height: 44px;
-  background: rgba(255,255,255,.15);
-  border: 1px solid rgba(255,255,255,.2);
-  border-radius: var(--r-md);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px; flex-shrink: 0;
-  backdrop-filter: blur(4px);
-}
-
-.nt-brand { display: flex; align-items: center; gap: 12px; }
-
-.nt-brand-name {
-  font-family: var(--font-display) !important;
-  font-size: 22px;
-  color: #FFFFFF;
-  line-height: 1.1;
-  letter-spacing: .01em;
-}
-
-.nt-brand-sub {
-  font-size: 11px;
-  color: rgba(255,255,255,.55);
-  font-weight: 400;
-  letter-spacing: .05em;
-  margin-top: 3px;
-}
-
-.nt-header-date {
-  font-size: 13px; font-weight: 600;
-  color: rgba(255,255,255,.9);
-  text-align: right;
-}
-
-.nt-header-plan {
-  font-size: 11px;
-  color: rgba(255,255,255,.45);
-  text-align: right;
-  margin-top: 2px;
-}
-
-/* ── Navigation radio ─────────────────────────────────────── */
-div[data-testid="stRadio"] {
-  background: rgba(255,255,255,.6) !important;
-  backdrop-filter: blur(8px) !important;
-  border: 1px solid var(--border-md) !important;
-  border-radius: var(--r-xl) !important;
-  padding: 4px !important;
-  margin-bottom: 20px !important;
-  box-shadow: var(--sh-xs) !important;
-}
-
-div[data-testid="stRadio"] > div[role="radiogroup"] {
-  display: flex !important;
-  gap: 3px !important;
-  flex-direction: row !important;
-}
-
-div[data-testid="stRadio"] label {
-  flex: 1 !important;
-  text-align: center !important;
-  border-radius: 18px !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  padding: 9px 10px !important;
-  color: var(--ocean-700) !important;
-  cursor: pointer !important;
-  transition: all 180ms ease !important;
-  white-space: nowrap !important;
-  background: transparent !important;
-  border: none !important;
-}
-
-div[data-testid="stRadio"] label:hover {
-  background: rgba(13,148,136,.10) !important;
-}
-
-div[data-testid="stRadio"] label:has(input:checked) {
-  background: linear-gradient(135deg, var(--ocean-700), var(--ocean-600)) !important;
-  color: #fff !important;
-  box-shadow: 0 2px 8px rgba(13,148,136,.35) !important;
-}
-
-div[data-testid="stRadio"] input[type="radio"] {
-  display: none !important;
-}
-
-/* ── Person tabs ──────────────────────────────────────────── */
-div[data-testid="stTabs"] [data-baseweb="tab-list"] {
-  background: rgba(255,255,255,.5) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--r-lg) !important;
-  padding: 4px !important;
-  gap: 3px !important;
-  margin-bottom: 16px !important;
-  backdrop-filter: blur(6px) !important;
-}
-
-div[data-testid="stTabs"] [data-baseweb="tab"] {
-  border-radius: var(--r-md) !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  padding: 9px 16px !important;
-  color: var(--ocean-700) !important;
-  background: transparent !important;
-  border: none !important;
-  font-family: var(--font-body) !important;
-  transition: all 180ms ease !important;
-}
-
-div[data-testid="stTabs"] [data-baseweb="tab"]:hover {
-  background: rgba(13,148,136,.08) !important;
-}
-
-div[data-testid="stTabs"] [aria-selected="true"] {
-  background: linear-gradient(135deg, var(--ocean-700), var(--ocean-600)) !important;
-  color: #fff !important;
-  box-shadow: 0 2px 8px rgba(13,148,136,.30) !important;
-}
-
-/* Remove the default tab underline indicator */
-div[data-testid="stTabs"] [data-baseweb="tab-highlight"],
-div[data-testid="stTabs"] [data-baseweb="tab-border"] {
-  display: none !important;
-}
-
-/* ── Stat cards ───────────────────────────────────────────── */
-.nt-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.nt-stat {
-  background: rgba(255,255,255,.7);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 14px 10px;
-  text-align: center;
-  backdrop-filter: blur(6px);
-  box-shadow: var(--sh-xs);
-}
-
-.nt-stat-val {
-  font-family: var(--font-display) !important;
-  font-size: 28px;
-  font-weight: 400;
-  color: var(--ocean-800);
-  line-height: 1;
-  margin-bottom: 4px;
-}
-
-.nt-stat-val.accent { color: var(--sky-600); }
-.nt-stat-val.muted  { color: var(--n400); }
-
-.nt-stat-lbl {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--n400);
-}
-
-/* ── Progress bar ─────────────────────────────────────────── */
-.nt-progress-wrap {
-  background: rgba(255,255,255,.4);
-  border-radius: var(--r-full);
-  height: 6px;
-  margin-bottom: 4px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-}
-
-.nt-progress-fill {
-  height: 6px;
-  border-radius: var(--r-full);
-  background: linear-gradient(90deg, var(--ocean-600), var(--ocean-400), var(--sky-400));
-  transition: width 400ms ease;
-  box-shadow: 0 0 8px rgba(45,212,191,.4);
-}
-
-.nt-progress-label {
-  font-size: 11px;
-  color: var(--n500);
-  margin-bottom: 16px;
-  font-weight: 500;
-}
-
-/* ── Person header ────────────────────────────────────────── */
-.nt-person {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: var(--r-lg);
-  margin-bottom: 14px;
-  margin-top: 2px;
-  border: 1px solid;
-}
-
-.nt-person.p1 {
-  background: linear-gradient(135deg, rgba(14,165,233,.08), rgba(14,165,233,.04));
-  border-color: rgba(14,165,233,.25);
-}
-
-.nt-person.p2 {
-  background: linear-gradient(135deg, rgba(13,148,136,.10), rgba(13,148,136,.04));
-  border-color: var(--border-md);
-}
-
-.nt-person-avatar {
-  width: 36px; height: 36px;
-  border-radius: var(--r-full);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 700; flex-shrink: 0;
-  letter-spacing: .02em;
-}
-
-.nt-person.p1 .nt-person-avatar {
-  background: linear-gradient(135deg, var(--sky-500), var(--sky-600));
-  color: #fff;
-  box-shadow: 0 2px 6px rgba(14,165,233,.35);
-}
-
-.nt-person.p2 .nt-person-avatar {
-  background: linear-gradient(135deg, var(--ocean-600), var(--ocean-800));
-  color: #fff;
-  box-shadow: 0 2px 6px rgba(13,148,136,.35);
-}
-
-.nt-person-name { font-size: 13px; font-weight: 700; }
-.nt-person.p1 .nt-person-name { color: var(--sky-700); }
-.nt-person.p2 .nt-person-name { color: var(--ocean-800); }
-
-.nt-person-role {
-  font-size: 11px; color: var(--n400);
-  font-weight: 400; margin-top: 1px;
-}
-
-/* ── Meal card ────────────────────────────────────────────── */
-.nt-meal {
-  background: rgba(255,255,255,.75);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 14px 16px;
-  margin-bottom: 8px;
-  backdrop-filter: blur(8px);
-  box-shadow: var(--sh-xs);
-  transition: box-shadow 180ms ease, border-color 180ms ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.nt-meal::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: var(--border-md);
-  transition: background 250ms ease;
-}
-
-.nt-meal:hover {
-  box-shadow: var(--sh-sm);
-  border-color: var(--border-md);
-}
-
-.nt-meal.done {
-  background: rgba(240,253,250,.85);
-  border-color: rgba(45,212,191,.35);
-}
-.nt-meal.done::before {
-  background: linear-gradient(180deg, var(--ocean-400), var(--ocean-600));
-}
-
-.nt-meal.skipped {
-  background: rgba(255,241,242,.75);
-  border-color: rgba(253,164,175,.4);
-}
-.nt-meal.skipped::before { background: #FDA4AF; }
-
-.nt-meal-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.nt-meal-body { flex: 1; min-width: 0; }
-
-.nt-meal-slot {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .09em;
-  text-transform: uppercase;
-  color: var(--ocean-600);
-  margin-bottom: 4px;
-  opacity: .8;
-}
-
-.nt-meal-desc {
-  font-size: 13.5px;
-  color: var(--n800);
-  line-height: 1.55;
-  font-weight: 400;
-}
-
-/* ── Status badge ─────────────────────────────────────────── */
-.nt-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: var(--r-full);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .03em;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.nt-badge.done {
-  background: var(--ocean-100);
-  color: var(--ocean-800);
-  border: 1px solid rgba(45,212,191,.4);
-}
-.nt-badge.skipped {
-  background: #FEE2E2;
-  color: #7F1D1D;
-  border: 1px solid #FCA5A5;
-}
-.nt-badge.pending {
-  background: rgba(255,255,255,.6);
-  color: var(--n400);
-  border: 1px solid var(--border);
-}
-
-/* ── Note pill ────────────────────────────────────────────── */
-.nt-note {
-  display: inline-flex;
-  align-items: flex-start;
-  gap: 6px;
-  background: rgba(224,242,254,.6);
-  border: 1px solid rgba(14,165,233,.2);
-  border-radius: var(--r-md);
-  padding: 6px 10px;
-  font-size: 12px;
-  color: var(--sky-700);
-  margin-top: 8px;
-  line-height: 1.45;
-  font-style: italic;
-  width: 100%;
-}
-
-/* ── Snack card ───────────────────────────────────────────── */
-.nt-snack {
-  background: rgba(255,251,235,.8);
-  border: 1px solid rgba(252,211,77,.4);
-  border-radius: var(--r-lg);
-  padding: 10px 14px;
-  margin-bottom: 8px;
-  backdrop-filter: blur(4px);
-}
-
-.nt-snack-label {
-  font-size: 10px; font-weight: 700;
-  letter-spacing: .08em; text-transform: uppercase;
-  color: #92400E; margin-bottom: 2px; opacity: .7;
-}
-
-.nt-snack-desc { font-size: 13px; color: var(--n800); }
-
-/* ── Section label ────────────────────────────────────────── */
-.nt-section-label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--ocean-700);
-  margin: 20px 0 10px;
-  opacity: .75;
-}
-
-.nt-section-label::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, var(--border-md), transparent);
-}
-
-/* ── Calendar ─────────────────────────────────────────────── */
-.nt-cal-wrap {
-  background: rgba(255,255,255,.65);
-  border: 1px solid var(--border-md);
-  border-radius: var(--r-lg);
-  padding: 16px;
-  backdrop-filter: blur(8px);
-  box-shadow: var(--sh-xs);
-}
-
-.nt-cal-month {
-  font-family: var(--font-display) !important;
-  font-size: 17px;
-  color: var(--ocean-900);
-}
-
-.nt-cal-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  margin-bottom: 12px;
-}
-
-.nt-cal-hdr {
-  text-align: center; font-size: 10px;
-  font-weight: 800; letter-spacing: .07em;
-  text-transform: uppercase;
-  color: var(--ocean-500); padding: 4px 0;
-}
-
-.nt-cal-day {
-  text-align: center; font-size: 12px; font-weight: 500;
-  padding: 8px 2px; border-radius: var(--r-sm); line-height: 1;
-  transition: transform 120ms ease;
-}
-
-.nt-cal-empty  { background: transparent; }
-.nt-cal-future { color: var(--n300); }
-.nt-cal-none   { background: rgba(255,255,255,.5); color: var(--n400); }
-.nt-cal-part   { background: rgba(224,242,254,.7); color: var(--sky-700); font-weight: 600; }
-.nt-cal-full   { background: var(--ocean-100); color: var(--ocean-800); font-weight: 700; }
-.nt-cal-today  { box-shadow: inset 0 0 0 2px var(--ocean-500); }
-.nt-cal-sel    { box-shadow: inset 0 0 0 2px var(--sky-500); }
-
-.nt-cal-legend {
-  display: flex; gap: 14px; flex-wrap: wrap; margin-top: 4px;
-}
-
-.nt-cal-leg {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 11px; color: var(--n500); font-weight: 500;
-}
-
-.nt-cal-dot {
-  width: 8px; height: 8px;
-  border-radius: var(--r-full); flex-shrink: 0;
-}
-
-/* ── Measurement cards ────────────────────────────────────── */
-.nt-meas-card {
-  background: rgba(255,255,255,.7);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 14px 18px;
-  margin-bottom: 10px;
-  backdrop-filter: blur(8px);
-  box-shadow: var(--sh-xs);
-}
-
-.nt-meas-header {
-  display: flex; align-items: center;
-  justify-content: space-between; flex-wrap: wrap;
-  gap: 8px; margin-bottom: 4px;
-}
-
-.nt-meas-title {
-  font-size: 14px; font-weight: 700;
-  color: var(--ocean-900);
-}
-
-.nt-meas-last {
-  font-size: 11px; color: var(--n400); font-weight: 400;
-}
-
-.nt-due-badge {
-  display: inline-flex; align-items: center;
-  padding: 3px 10px; border-radius: var(--r-full);
-  font-size: 11px; font-weight: 700; letter-spacing: .02em; border: 1px solid;
-}
-
-.nt-due-now { background: var(--warn-bg); color: var(--warn-tx); border-color: var(--warn-bd); }
-.nt-due-ok  { background: var(--ocean-100); color: var(--ocean-800); border-color: rgba(45,212,191,.4); }
-
-/* ── Login ────────────────────────────────────────────────── */
-.nt-login { max-width: 360px; margin: 50px auto 0; text-align: center; }
-
-.nt-login-mark {
-  width: 72px; height: 72px;
-  background: linear-gradient(135deg, var(--ocean-700), var(--ocean-500));
-  border-radius: 20px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 36px; margin: 0 auto 18px;
-  box-shadow: 0 8px 32px rgba(13,148,136,.35);
-}
-
-.nt-login-title {
-  font-family: var(--font-display) !important;
-  font-size: 32px; color: var(--ocean-950);
-  margin-bottom: 8px;
-  letter-spacing: -.01em; line-height: 1.1;
-}
-
-.nt-login-sub {
-  font-size: 14px; color: var(--n500);
-  margin-bottom: 28px; font-weight: 300; line-height: 1.5;
-}
-
-/* ── Buttons ──────────────────────────────────────────────── */
-.stButton > button {
-  font-family: var(--font-body) !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  border-radius: var(--r-md) !important;
-  padding: 7px 16px !important;
-  border: 1px solid var(--border-md) !important;
-  background: rgba(255,255,255,.7) !important;
-  color: var(--ocean-800) !important;
-  box-shadow: var(--sh-xs) !important;
-  backdrop-filter: blur(4px) !important;
-  transition: all 180ms ease !important;
-  letter-spacing: -.01em !important;
-}
-
-.stButton > button:hover {
-  background: rgba(255,255,255,.95) !important;
-  border-color: var(--ocean-500) !important;
-  color: var(--ocean-700) !important;
-  box-shadow: 0 2px 10px rgba(13,148,136,.2) !important;
-  transform: translateY(-1px) !important;
-}
-
-.stButton > button:active {
-  transform: translateY(0) scale(.98) !important;
-  box-shadow: none !important;
-}
-
-.stButton > button[kind="primary"] {
-  background: linear-gradient(135deg, var(--ocean-700), var(--ocean-600)) !important;
-  border-color: var(--ocean-700) !important;
-  color: #fff !important;
-  box-shadow: 0 3px 12px rgba(13,148,136,.35) !important;
-}
-
-.stButton > button[kind="primary"]:hover {
-  background: linear-gradient(135deg, var(--ocean-600), var(--ocean-500)) !important;
-  border-color: var(--ocean-600) !important;
-  color: #fff !important;
-  box-shadow: 0 4px 18px rgba(13,148,136,.45) !important;
-}
-
-/* ── Expanders ──────────────────────────────────────────── */
-/* NEVER add padding/positioning to summary — breaks Streamlit's icon layout */
-[data-testid="stExpander"] {
-  background: rgba(255,255,255,.65) !important;
-  border: 1px solid var(--border-md) !important;
-  border-radius: var(--r-lg) !important;
-  margin-bottom: 10px !important;
-  backdrop-filter: blur(8px) !important;
-  box-shadow: var(--sh-xs) !important;
-  overflow: hidden !important;
-  transition: box-shadow 180ms ease, border-color 180ms ease !important;
-}
-
-[data-testid="stExpander"]:has(details[open]) {
-  box-shadow: var(--sh-sm) !important;
-  border-color: rgba(13,148,136,.3) !important;
-}
-
-/* Target Streamlit's label paragraph only — safe, doesn't affect icon */
-[data-testid="stExpander"] summary p {
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  color: var(--ocean-800) !important;
-}
-
-/* Streamlit expander icon uses Material Icons font — must NOT be overridden */
-[data-testid="stExpander"] summary > div > span:first-child {
-  font-family: 'Material Icons', 'Material Icons Outlined' !important;
-}
-
-[data-testid="stExpanderDetails"] {
-  border-top: 1px solid var(--border) !important;
-  padding: 14px 16px !important;
-}
-
-
-/* Restore Material Icons font for Streamlit's icon spans — never override */
-[data-testid="stExpander"] summary span[class*="icon"],
-.material-icons,
-[class*="MaterialIcons"],
-[class*="material-icon"] {
-  font-family: 'Material Icons' !important;
-  font-size: 20px !important;
-}
-/* ── Inputs ───────────────────────────────────────────────── */
-.stTextInput input,
-.stTextArea textarea,
-.stNumberInput input,
-.stDateInput input {
-  font-family: var(--font-body) !important;
-  font-size: 13px !important;
-  border-radius: var(--r-md) !important;
-  border: 1px solid var(--border-md) !important;
-  background: rgba(255,255,255,.8) !important;
-  color: var(--n800) !important;
-  transition: border-color 180ms ease, box-shadow 180ms ease !important;
-}
-
-.stTextInput input:focus,
-.stTextArea textarea:focus,
-.stNumberInput input:focus,
-.stDateInput input:focus {
-  border-color: var(--ocean-500) !important;
-  box-shadow: 0 0 0 3px rgba(14,148,136,.15) !important;
-  background: #fff !important;
-  outline: none !important;
-}
-
-.stTextArea textarea { resize: vertical !important; min-height: 72px !important; }
-
-/* ── Selectbox ────────────────────────────────────────────── */
-.stSelectbox > div > div {
-  background: rgba(255,255,255,.8) !important;
-  border-radius: var(--r-md) !important;
-  border-color: var(--border-md) !important;
-  font-size: 13px !important;
-  font-family: var(--font-body) !important;
-}
-
-/* ── File uploader ────────────────────────────────────────── */
-.stFileUploader > div {
-  border: 1.5px dashed var(--border-md) !important;
-  border-radius: var(--r-lg) !important;
-  background: rgba(240,253,250,.5) !important;
-}
-
-.stFileUploader > div:hover {
-  border-color: var(--ocean-500) !important;
-  background: rgba(204,251,241,.3) !important;
-}
-
-/* ── Date input ───────────────────────────────────────────── */
-.stDateInput > div {
-  background: rgba(255,255,255,.8) !important;
-  border-radius: var(--r-md) !important;
-}
-
-/* ── HR ───────────────────────────────────────────────────── */
-hr {
-  border: none !important;
-  border-top: 1px solid var(--border-md) !important;
-  margin: 12px 0 !important;
-}
-
-/* ── Captions ─────────────────────────────────────────────── */
-.stCaption, [data-testid="stCaptionContainer"] > p {
-  font-size: 11px !important;
-  color: var(--n400) !important;
-  font-weight: 500 !important;
-}
-
-/* ── Charts ───────────────────────────────────────────────── */
-[data-testid="stArrowVegaLiteChart"] {
-  background: rgba(255,255,255,.65) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--r-lg) !important;
-  padding: 12px !important;
-  backdrop-filter: blur(8px) !important;
-}
-
-/* ── Alerts ───────────────────────────────────────────────── */
-[data-testid="stAlert"] {
-  border-radius: var(--r-lg) !important;
-  font-size: 13px !important;
-  backdrop-filter: blur(4px) !important;
-}
-
-/* ── Images ───────────────────────────────────────────────── */
-img { border-radius: var(--r-lg) !important; box-shadow: var(--sh-sm) !important; }
-
-/* ── Columns ──────────────────────────────────────────────── */
-div[data-testid="column"] { padding: 0 4px !important; }
-div[data-testid="column"]:first-child { padding-left: 0 !important; }
-div[data-testid="column"]:last-child  { padding-right: 0 !important; }
-
-/* ── Scrollbar ────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: var(--ocean-300);
-  border-radius: var(--r-full);
-}
-
-/* ── Animations ───────────────────────────────────────────── */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateX(-6px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-.nt-header { animation: fadeUp 350ms ease both; }
-.nt-meal   { animation: fadeUp 220ms ease both; }
-.nt-snack  { animation: slideIn 200ms ease both; }
-
-.nt-meal:nth-child(1) { animation-delay:  0ms; }
-.nt-meal:nth-child(2) { animation-delay: 35ms; }
-.nt-meal:nth-child(3) { animation-delay: 70ms; }
-.nt-meal:nth-child(4) { animation-delay:105ms; }
-.nt-meal:nth-child(5) { animation-delay:140ms; }
-.nt-meal:nth-child(6) { animation-delay:175ms; }
-.nt-meal:nth-child(7) { animation-delay:210ms; }
-
-
-
-/* ── Image thumbnail ─────────────────────────────────────── */
-.nt-thumb-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 8px 0 4px;
-}
-
-/* Thumbnail: small fixed size, rounded, slight border */
-.nt-thumb-wrap img,
-[data-testid="stImage"] img {
-  border-radius: var(--r-md) !important;
-  box-shadow: var(--sh-sm) !important;
-  object-fit: cover !important;
-  transition: transform 180ms ease !important;
-  cursor: pointer;
-}
-
-/* Full-view image — no size restriction, just rounded */
-.nt-img-full img {
-  border-radius: var(--r-lg) !important;
-  width: 100% !important;
-  margin-top: 8px;
-  box-shadow: var(--sh-md) !important;
-}
-
-/* ── Icon / small action buttons — centred glyph ────────── */
-.stButton > button[data-testid="baseButton-secondary"] {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 6px 8px !important;
-  line-height: 1 !important;
-  font-size: 14px !important;
-}
-
-/* Force all button content to be centred */
-.stButton > button > div {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 100% !important;
-  gap: 4px !important;
-}
-
-/* Single-character icon buttons (▲ ▼ ⚙️ 📝 ✏️) */
-.stButton > button > div > p {
-  margin: 0 !important;
-  line-height: 1 !important;
-  text-align: center !important;
-}
-
-
-/* ── Compact icon action buttons (row 2) ────────────────── */
-/* Make icon-only buttons shorter than text buttons */
-div[data-testid="column"]:has(button[title]) .stButton > button {
-  padding: 5px 4px !important;
-  font-size: 16px !important;
-  min-height: 36px !important;
-  line-height: 1 !important;
-}
-
-/* Status buttons (row 1) — slightly taller, clear text */
-.nt-meal + div .stButton > button,
-.nt-meal ~ div .stButton > button {
-  font-size: 13px !important;
-}
-
-/* Tooltip (help=) shows on hover natively in Streamlit — no extra CSS needed */
-
-/* Reduce vertical gap between the two button rows */
-div[data-testid="stVerticalBlock"] > div[data-testid="stHorizontalBlock"] {
-  margin-bottom: 2px !important;
-}
-
-
-/* ── Measurement charts (Altair) ─────────────────────────── */
-[data-testid="stArrowVegaLiteChart"] {
-  background: rgba(255,255,255,.7) !important;
-  border: 1px solid var(--border-md) !important;
-  border-radius: var(--r-lg) !important;
-  padding: 14px 10px 6px !important;
-  backdrop-filter: blur(8px) !important;
-  box-shadow: var(--sh-sm) !important;
-  margin-bottom: 8px !important;
-}
-
-/* Vega canvas background transparent */
-[data-testid="stArrowVegaLiteChart"] canvas {
-  background: transparent !important;
-}
-
-/* ── Mobile ───────────────────────────────────────────────── */
-@media (max-width: 640px) {
-  .block-container { padding: 1rem 0.75rem 4rem !important; }
-  .nt-header { padding: 14px 16px; }
-  .nt-brand-name { font-size: 20px; }
-  .nt-header-date, .nt-header-plan { display: none; }
-  .nt-stats { gap: 8px; }
-  .nt-stat-val { font-size: 24px; }
-  .nt-cal-day { padding: 6px 1px; font-size: 11px; }
-  div[data-testid="stTabs"] [data-baseweb="tab"] {
-    padding: 8px 10px !important; font-size: 12px !important;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: .01ms !important;
-    transition-duration: .01ms !important;
-  }
-}
+"""
+NutriTrack v7 — Personalised Nutrition Tracker
+Full CRUD: add, edit, delete, reorder meals per day/person.
+Reads style.css from the same directory for all visual styling.
+"""
+
+import streamlit as st
+from datetime import datetime, date, timezone, timedelta
+import requests, time, jwt, calendar as cal_lib
+from pathlib import Path
+import threading
+
+IST   = timezone(timedelta(hours=5, minutes=30))
+TODAY = datetime.now(IST).date()
+DAYS  = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+st.set_page_config(
+    page_title="NutriTrack",
+    page_icon="🌿",
+    layout="centered",
+    initial_sidebar_state="collapsed",
+)
+
+def load_css():
+    p = Path(__file__).parent / "style.css"
+    if p.exists():
+        st.markdown(f"<style>{p.read_text()}</style>", unsafe_allow_html=True)
+
+load_css()
+
+# ── Default meal plan ──────────────────────────────────────
+
+DEFAULT_MEALS = {
+    "Mon": {
+        "p1": [
+            {"slot": "Pre-training · 6 AM",    "desc": "1 glass of plain water + 1 med banana OR 1 whole fruit (Apple/Orange/Chickoo/Guava)"},
+            {"slot": "During training",         "desc": "500–600 ml of plain water"},
+            {"slot": "Breakfast · 8:30 AM",    "desc": "1 scoop whey protein in 200 ml water + 30 g moong sprouts (15 g raw)"},
+            {"slot": "Lunch · 12:30 PM",       "desc": "100 g raw salad + 2 methi/cabbage parathas + 50 g tofu bhurji + 150 ml chaas + 1 scoop samah powder"},
+            {"slot": "Evening snack · 4 PM",   "desc": "1 cup green tea + 1 vit-C rich fruit"},
+            {"slot": "Dinner · 7 PM",          "desc": "100 g sabzi/salad + 1 multigrain bread slice + 70 g tofu bhurji"},
+        ],
+        "p2": [
+            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt) — sip throughout morning"},
+            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee (no sugar) | During training: plain water"},
+            {"slot": "Breakfast · 8:30 AM",    "desc": "400 ml oats protein smoothie + 30 g moong sprouts (15 g raw)"},
+            {"slot": "Mid-morning · 10 AM",    "desc": "1 vit-C rich fruit + 4 egg whites (bhurji or omelette)"},
+            {"slot": "Lunch · 12:30 PM",       "desc": "100 g salad + 3 methi/cabbage parathas + 100 g tofu bhurji + 100 g skyr yogurt"},
+            {"slot": "Evening · 4 PM",         "desc": "20 g roasted peanuts + ½ scoop whey in 200 ml water"},
+            {"slot": "Dinner · 7 PM",          "desc": "100 g sabzi/salad + 1 multigrain bread + 150 g tofu bhurji"},
+            {"slot": "Bedtime",                "desc": "200 ml toned milk + 2 pinches cinnamon (no sugar)"},
+        ],
+    },
+    "Tue": {
+        "p1": [
+            {"slot": "Pre-training · 6 AM",    "desc": "1 glass of plain water + 1 med banana OR 1 whole fruit (Apple/Orange/Chickoo/Guava)"},
+            {"slot": "During training",         "desc": "300–400 ml of plain water"},
+            {"slot": "Breakfast · 8:30 AM",    "desc": "1 scoop whey protein in 200 ml water + 30 g chickpeas (15 g raw)"},
+            {"slot": "Lunch · 12:30 PM",       "desc": "100 g raw salad + 2 jowar bhakri + 50 g low fat pan fry paneer + 50 g plain curd + 1 scoop samah powder"},
+            {"slot": "Evening snack · 4 PM",   "desc": "1 cup green tea + 1 vit-C rich fruit"},
+            {"slot": "Dinner · 7 PM",          "desc": "100 g sabzi/salad + 1 jowar bhakri + 70 g low fat tossed paneer"},
+        ],
+        "p2": [
+            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"},
+            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During training 6:30–8 AM: 300–500 ml plain water + Supply 6 salts (1 sachet in 500 ml)"},
+            {"slot": "Breakfast · 8:30 AM",    "desc": "400 ml oats protein smoothie + 30 g boiled chickpeas (15 g raw)"},
+            {"slot": "Mid-morning · 10 AM",    "desc": "1 vit-C rich fruit + 4 egg whites"},
+            {"slot": "Lunch · 12:30 PM",       "desc": "100 g salad + 3 jowar bhakri + 100 g low fat pan fry paneer + 100 g plain curd"},
+            {"slot": "Evening · 4 PM",         "desc": "20 g makhana + ½ scoop whey in 200 ml water"},
+            {"slot": "Dinner · 7 PM",          "desc": "100 g sabzi/salad + 2 jowar bhakri + 150 g low fat tossed paneer"},
+            {"slot": "Bedtime",                "desc": "200 ml toned milk + 2 pinches cinnamon (no sugar)"},
+        ],
+    },
+    "Wed": {
+        "p1": [
+            {"slot": "Pre-training · 6 AM",    "desc": "1 glass of plain water + 1 med banana OR 1 whole fruit (Apple/Orange/Chickoo/Guava)"},
+            {"slot": "During training",         "desc": "500–600 ml of plain water"},
+            {"slot": "Breakfast · 8:30 AM",    "desc": "1 vegetable sandwich + 1 scoop whey protein in 200 ml water"},
+            {"slot": "Lunch · 12:30 PM",       "desc": "100 g raw salad + 200 g mix veg pulao (rice + quinoa) + 100 g skyr protein yogurt + 1 scoop samah powder"},
+            {"slot": "Evening snack · 4 PM",   "desc": "1 cup green tea + 1 vit-C rich fruit"},
+            {"slot": "Dinner · 7 PM",          "desc": "50 g boiled chickpeas / 150 ml dal (30 g raw) + 70 g air fried paneer & 100 g sautéed veggies OR 70 g pan sautéed paneer & 100 g veggies"},
+        ],
+        "p2": [
+            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"},
+            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During training 6–7 AM: Supply 6 salts (1 sachet in 600 ml)"},
+            {"slot": "Breakfast · 8:30 AM",    "desc": "2 veg sandwiches + 200 ml toned milk + 1 scoop whey protein"},
+            {"slot": "Mid-morning · 10 AM",    "desc": "1 vit-C rich fruit + 4 egg whites"},
+            {"slot": "Lunch · 12:30 PM",       "desc": "100 g salad + 200 g mix veg pulao (rice + quinoa) + 100 g chicken kheema + 200 ml chaas"},
+            {"slot": "Evening · 4 PM",         "desc": "20 g roasted peanuts + ½ scoop whey in 200 ml water"},
+            {"slot": "Dinner · 7 PM",          "desc": "100 g sabzi + 100 g boiled chickpeas / 150 ml dal (30 g) + 150 g air fried / pan sautéed chicken + 100 g sautéed veggies"},
+            {"slot": "Bedtime",                "desc": "200 ml toned milk + 2 pinches cinnamon (no sugar)"},
+        ],
+    },
+    "Thu": {
+        "p1": [
+            {"slot": "Pre-training · 6 AM",    "desc": "1 glass of plain water + 1 med banana OR 1 whole fruit (Apple/Orange/Chickoo/Guava)"},
+            {"slot": "During training",         "desc": "500–600 ml of plain water"},
+            {"slot": "Breakfast · 8:30 AM",    "desc": "1 scoop whey protein in 200 ml water + 30 g kala channa (15 g raw, soak overnight)"},
+            {"slot": "Lunch · 12:30 PM",       "desc": "100 g raw salad + 2 whole wheat roti + 100 g rajma masala (30 g dry rajma) + 50 g plain curd + 1 scoop samah powder"},
+            {"slot": "Evening snack · 4 PM",   "desc": "1 cup green tea + 1 vit-C rich fruit"},
+            {"slot": "Dinner · 7 PM",          "desc": "100 g sabzi/salad + 1 whole wheat roti + 70 g tofu stir fry"},
+        ],
+        "p2": [
+            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"},
+            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During training 6:30–8 AM: 300–500 ml plain water + Supply 6 salts (1 sachet in 500 ml)"},
+            {"slot": "Breakfast · 8:30 AM",    "desc": "400 ml oats protein porridge + 30 g boiled kala channa (15 g raw)"},
+            {"slot": "Mid-morning · 10 AM",    "desc": "1 vit-C rich fruit + 4 egg whites"},
+            {"slot": "Lunch · 12:30 PM",       "desc": "100 g salad + 3 whole wheat roti + 150 g rajma masala (50 g rajma) + 100 g skyr yogurt"},
+            {"slot": "Evening · 4 PM",         "desc": "20 g makhana + ½ scoop whey in 200 ml water"},
+            {"slot": "Dinner · 7 PM",          "desc": "100 g sabzi/salad + 2 whole wheat roti + 150 g tofu stir fry"},
+            {"slot": "Bedtime",                "desc": "200 ml toned milk + 2 pinches cinnamon (no sugar)"},
+        ],
+    },
+    "Fri": {
+        "p1": [
+            {"slot": "Pre-training · 6 AM",    "desc": "1 glass of plain water + 1 med banana OR 1 whole fruit (Apple/Orange/Chickoo/Guava)"},
+            {"slot": "During training",         "desc": "No specific instruction (rest/light day)"},
+            {"slot": "Breakfast · 8:30 AM",    "desc": "2 bread toast + 1 scoop whey protein in 200 ml water + 30 g chickpeas (15 g raw)"},
+            {"slot": "Lunch · 12:30 PM",       "desc": "100 g raw salad + 2 jowar bhakri + 50 g low fat palak paneer + 50 g plain curd + 1 scoop samah powder"},
+            {"slot": "Evening snack · 4 PM",   "desc": "1 cup green tea + 1 vit-C rich fruit"},
+            {"slot": "Dinner · 7 PM",          "desc": "100 g sabzi/salad + 1 jowar bhakri + 70 g low fat palak paneer"},
+        ],
+        "p2": [
+            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"},
+            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During training 6–7 AM: Supply 6 salts (1 sachet in 600 ml)"},
+            {"slot": "Breakfast · 8:30 AM",    "desc": "3 bread toast + 4 egg whites (omelette/bhurji) + 200 ml toned milk + 1 scoop whey protein"},
+            {"slot": "Mid-morning · 10 AM",    "desc": "1 vit-C rich fruit + 4 egg whites"},
+            {"slot": "Lunch · 12:30 PM",       "desc": "100 g salad + 3 jowar bhakri + 100 g low fat palak paneer + 100 g plain curd"},
+            {"slot": "Evening · 4 PM",         "desc": "20 g roasted peanuts + ½ scoop whey in 200 ml water"},
+            {"slot": "Dinner · 7 PM",          "desc": "100 g sabzi/salad + 2 jowar bhakri + 150 g low fat palak paneer"},
+            {"slot": "Bedtime",                "desc": "200 ml toned milk + 2 pinches cinnamon (no sugar)"},
+        ],
+    },
+    "Sat": {
+        "p1": [
+            {"slot": "Pre-training · 6 AM",    "desc": "1 glass of plain water + 1 med banana OR 1 whole fruit (Apple/Orange/Chickoo/Guava)"},
+            {"slot": "During training",         "desc": "1 sachet Supply 6 salts in 500–600 ml water"},
+            {"slot": "Breakfast · 8:30 AM",    "desc": "1 scoop whey protein in 200 ml water + 30 g chickpeas (15 g raw)"},
+            {"slot": "Lunch · 12:30 PM",       "desc": "Tofu burrito wrap (2 whole wheat roti + 50 g tofu + 100 g veggies + 15 g salsa) + 150 ml chaas + 1 scoop samah powder"},
+            {"slot": "Evening snack · 4 PM",   "desc": "1 cup green tea + 1 vit-C rich fruit"},
+            {"slot": "Dinner · 7 PM",          "desc": "200 g shirataki noodles (100 g noodles + 100 g veggies) + 200 ml tomato soup + 100 g skyr protein yogurt"},
+        ],
+        "p2": [
+            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"},
+            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During training 6:30–8 AM: 300–500 ml plain water + Supply 6 salts (1 sachet in 500 ml)"},
+            {"slot": "Breakfast · 8:30 AM",    "desc": "400 ml oats protein smoothie + 30 g moong sprouts (15 g raw)"},
+            {"slot": "Mid-morning · 10 AM",    "desc": "1 vit-C rich fruit + 4 egg whites"},
+            {"slot": "Lunch · 12:30 PM",       "desc": "100 g salad + tofu burrito wrap (2 wheat roti + 100 g tofu + 20 g boiled rajma + 75 g veggies + 15 g salsa) + 200 ml chaas"},
+            {"slot": "Evening · 4 PM",         "desc": "20 g makhana + ½ scoop whey in 200 ml water"},
+            {"slot": "Dinner · 7 PM",          "desc": "250 g shirataki noodles (150 g noodles + 100 g veggies) + 150 g chicken stir fry + 200 ml tomato soup"},
+            {"slot": "Bedtime",                "desc": "200 ml toned milk + 2 pinches cinnamon (no sugar)"},
+        ],
+    },
+    "Sun": {
+        "p1": [
+            {"slot": "Pre-training · 6 AM",    "desc": "1 glass of plain water + 1 med banana OR 1 whole fruit (Apple/Orange/Chickoo/Guava)"},
+            {"slot": "During training",         "desc": "1 sachet Supply 6 salts in 500–600 ml water"},
+            {"slot": "Breakfast · 8:30 AM",    "desc": "1 scoop whey protein in 200 ml water + 30 g kala channa (15 g raw)"},
+            {"slot": "Lunch · 12:30 PM",       "desc": "100 g raw salad + 200 g vegetable khichdi (75 g rice + 75 g dal + 50 g veggies) + 100 g skyr protein yogurt + 1 scoop samah powder"},
+            {"slot": "Evening snack · 4 PM",   "desc": "1 cup green tea + 1 vit-C rich fruit"},
+            {"slot": "Dinner · 7 PM",          "desc": "⭐ Enjoyment meal"},
+        ],
+        "p2": [
+            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"},
+            {"slot": "Pre-training · 5:30–6 AM (long run)","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During run: Supply 6 salts (1 sachet in 500 ml) + energy gel with caffeine at 45 min + plain energy gel at 80 min"},
+            {"slot": "Breakfast · 8:30 AM",    "desc": "400 ml oats protein smoothie + 30 g boiled chickpeas (15 g raw)"},
+            {"slot": "Mid-morning · 10 AM",    "desc": "1 vit-C rich fruit + 4 egg whites"},
+            {"slot": "Lunch · 12:30 PM",       "desc": "100 g salad + 250 g veg khichdi (100 g rice + 100 g dal + 50 g veggies) OR 250 g chicken biryani (150 g rice + 100 g chicken curry) + 100 g cucumber raita"},
+            {"slot": "Evening · 4 PM",         "desc": "150 g yogurt bowl (100 g yogurt + ½ scoop whey + 1 whole fruit + 1 tsp chia seeds)"},
+            {"slot": "Dinner · 7 PM",          "desc": "⭐ Enjoyment meal"},
+            {"slot": "Bedtime",                "desc": "200 ml toned milk + 2 pinches cinnamon (no sugar)"},
+        ],
+    },
+}
+
+
+# ── Firebase REST ──────────────────────────────────────────
+
+_TK = {"v": None, "e": 0}
+
+def get_token():
+    now = int(time.time())
+    if _TK["v"] and now < _TK["e"] - 60:
+        return _TK["v"]
+    c      = st.secrets["firebase_credentials"]
+    pk     = c["private_key"].replace("\\n", "\n")
+    signed = jwt.encode(
+        {"iss": c["client_email"], "sub": c["client_email"],
+         "aud": "https://oauth2.googleapis.com/token",
+         "iat": now, "exp": now + 3600,
+         "scope": "https://www.googleapis.com/auth/datastore"},
+        pk, algorithm="RS256",
+    )
+    r = requests.post(
+        "https://oauth2.googleapis.com/token",
+        data={"grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer", "assertion": signed},
+        timeout=10,
+    )
+    r.raise_for_status()
+    d = r.json()
+    _TK["v"] = d["access_token"]
+    _TK["e"] = now + d.get("expires_in", 3600)
+    return _TK["v"]
+
+def _h():
+    return {"Authorization": f"Bearer {get_token()}", "Content-Type": "application/json"}
+
+def _u(path):
+    pid = st.secrets["firebase_credentials"]["project_id"]
+    return f"https://firestore.googleapis.com/v1/projects/{pid}/databases/(default)/documents/{path}"
+
+def _to(v):
+    if isinstance(v, bool):  return {"booleanValue": v}
+    if isinstance(v, int):   return {"integerValue": str(v)}
+    if isinstance(v, float): return {"doubleValue": v}
+    if isinstance(v, str):   return {"stringValue": v}
+    if isinstance(v, dict):  return {"mapValue":  {"fields": {k: _to(u) for k, u in v.items()}}}
+    if isinstance(v, list):  return {"arrayValue": {"values": [_to(i) for i in v]}}
+    return {"nullValue": None}
+
+def _fr(v):
+    if "stringValue"    in v: return v["stringValue"]
+    if "booleanValue"   in v: return v["booleanValue"]
+    if "integerValue"   in v: return int(v["integerValue"])
+    if "doubleValue"    in v: return v["doubleValue"]
+    if "nullValue"      in v: return None
+    if "timestampValue" in v: return v["timestampValue"]
+    if "mapValue"       in v: return {k: _fr(u) for k, u in v["mapValue"].get("fields", {}).items()}
+    if "arrayValue"     in v: return [_fr(i) for i in v["arrayValue"].get("values", [])]
+    return None
+
+def fs_get(col, did):
+    r = requests.get(_u(f"{col}/{did}"), headers=_h(), timeout=10)
+    if r.status_code == 404: return None
+    r.raise_for_status()
+    return {k: _fr(v) for k, v in r.json().get("fields", {}).items()}
+
+def fs_set(col, did, data):
+    requests.patch(
+        _u(f"{col}/{did}"), headers=_h(),
+        json={"fields": {k: _to(v) for k, v in data.items()}}, timeout=10,
+    ).raise_for_status()
+
+def fs_del(col, did):
+    requests.delete(_u(f"{col}/{did}"), headers=_h(), timeout=10)
+
+def fs_list(col, filters=None):
+    r = requests.get(_u(col), headers=_h(), timeout=20)
+    if r.status_code != 200: return []
+    out = []
+    for doc in r.json().get("documents", []):
+        did    = doc["name"].split("/")[-1]
+        fields = {k: _fr(v) for k, v in doc.get("fields", {}).items()}
+        if filters and not all(fields.get(f["field"]) == f["value"] for f in filters):
+            continue
+        out.append({"id": did, **fields})
+    return out
+
+def fs_add(col, data):
+    r = requests.post(
+        _u(col), headers=_h(),
+        json={"fields": {k: _to(v) for k, v in data.items()}}, timeout=10,
+    )
+    r.raise_for_status()
+    return r.json()["name"].split("/")[-1]
+
+
+# ── Cloudinary ─────────────────────────────────────────────
+
+def upload_photo(fb, fn) -> str:
+    r = requests.post(
+        f"https://api.cloudinary.com/v1_1/{st.secrets['cloudinary_cloud_name']}/image/upload",
+        data={"upload_preset": st.secrets["cloudinary_upload_preset"]},
+        files={"file": (fn, fb)}, timeout=30,
+    )
+    return r.json().get("secure_url", "") if r.status_code == 200 else ""
+
+
+# ── Meal plan — dynamic, stored in Firestore ───────────────
+
+def _default_plan(day: str, person: str) -> list:
+    return [{"slot": m["slot"], "desc": m["desc"]} for m in DEFAULT_MEALS[day][person]]
+
+def load_day_plan(day: str, person: str) -> list:
+    """Session-state backed — instant on rerun, loads Firestore once per session."""
+    sk = f"_plan_{day}_{person}"
+    if sk not in st.session_state:
+        doc = fs_get("meal_plans", f"{day}_{person}")
+        if doc and doc.get("meals"):
+            st.session_state[sk] = [
+                {"slot": m.get("slot", ""), "desc": m.get("desc", "")}
+                for m in doc["meals"]
+            ]
+        else:
+            st.session_state[sk] = _default_plan(day, person)
+    return st.session_state[sk]
+
+def save_day_plan(day: str, person: str, meals: list):
+    """
+    Update session state instantly AND write to Firestore synchronously.
+    Also clears planned_desc in today's tracking entries so disp_desc refreshes.
+    """
+    sk = f"_plan_{day}_{person}"
+    frozen = [{"slot": m["slot"], "desc": m["desc"]} for m in meals]
+    st.session_state[sk] = frozen
+    st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
+    # If editing today's plan, clear planned_desc snapshots in session-state
+    # tracking entries so the corrected description shows immediately.
+    today_day = DAYS[TODAY.weekday()]
+    if day == today_day:
+        te_sk = f"_de_{TODAY.isoformat()}"
+        if te_sk in st.session_state:
+            for key, entry in st.session_state[te_sk].items():
+                if f"_{person}_" in key and "planned_desc" in entry:
+                    entry["planned_desc"] = ""
+    fs_set("meal_plans", f"{day}_{person}", {"meals": frozen})
+
+def reset_day_plan(day: str, person: str):
+    sk = f"_plan_{day}_{person}"
+    fs_del("meal_plans", f"{day}_{person}")
+    st.session_state[sk] = _default_plan(day, person)
+    st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
+
+def reset_all_plans(person: str):
+    """Delete Firestore docs, write defaults back to session state immediately."""
+    for day in DAYS:
+        sk = f"_plan_{day}_{person}"
+        # Delete from Firestore
+        fs_del("meal_plans", f"{day}_{person}")
+        # Immediately seed session state with hardcoded defaults
+        # so the next render never hits the (possibly slow) Firestore read
+        st.session_state[sk] = _default_plan(day, person)
+    st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
+
+
+# ── Tracking ───────────────────────────────────────────────
+
+def tk(d: date, person, idx):
+    return f"{d.isoformat()}_{person}_{idx}"
+
+@st.cache_data(ttl=60)
+def load_all_tracking() -> dict:
+    return {doc["id"]: doc for doc in fs_list("tracking")}
+
+def load_day_entries(date_str: str) -> dict:
+    """Session-state backed — instant on rerun."""
+    sk = f"_de_{date_str}"
+    if sk not in st.session_state:
+        st.session_state[sk] = {
+            doc["id"]: doc
+            for doc in fs_list("tracking")
+            if doc["id"].startswith(date_str + "_")
+        }
+    return st.session_state[sk]
+
+def _write_entry_bg(doc_id: str, entry: dict, token: str, pid: str):
+    """Background thread — all credentials pre-fetched on main thread."""
+    try:
+        url  = (f"https://firestore.googleapis.com/v1/projects/{pid}"
+                f"/databases/(default)/documents/tracking/{doc_id}")
+        hdrs = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        requests.patch(url, headers=hdrs,
+                       json={"fields": {k: _to(v) for k, v in entry.items()}},
+                       timeout=10)
+    except Exception:
+        pass
+
+def update_entry(date_str: str, doc_id: str, entry: dict):
+    """Update session state instantly, fire Firestore write in background.
+    All st.secrets access happens on the main thread before thread spawn."""
+    sk = f"_de_{date_str}"
+    if sk not in st.session_state:
+        st.session_state[sk] = {}
+    st.session_state[sk][doc_id] = dict(entry)
+    load_all_tracking.clear()
+    try:
+        token = get_token()
+        pid   = st.secrets["firebase_credentials"]["project_id"]
+    except Exception:
+        return  # If we can't get creds, skip background write (already in session state)
+    threading.Thread(target=_write_entry_bg,
+                     args=(doc_id, dict(entry), token, pid),
+                     daemon=True).start()
+
+def bust_tracking(date_str: str):
+    sk = f"_de_{date_str}"
+    if sk in st.session_state:
+        del st.session_state[sk]
+    load_all_tracking.clear()
+
+def day_pct(d: date, all_t: dict) -> float:
+    day_name = DAYS[d.weekday()]
+    meals    = load_day_plan(day_name, "p1") + load_day_plan(day_name, "p2")
+    total    = len(meals)
+    done     = sum(
+        1 for p in ["p1", "p2"]
+        for i in range(len(load_day_plan(day_name, p)))
+        if all_t.get(tk(d, p, i), {}).get("status", "pending") in ("done", "skipped")
+    )
+    return done / total if total else 0
+
+
+# ── Auth ───────────────────────────────────────────────────
+
+def check_password() -> bool:
+    if st.session_state.get("auth"): return True
+    st.markdown(
+        '<div class="nt-login">'
+        '<div class="nt-login-mark">🌿</div>'
+        '<div class="nt-login-title">NutriTrack</div>'
+        '<div class="nt-login-sub">Your personalised nutrition companion</div>'
+        '</div>', unsafe_allow_html=True)
+    pw = st.text_input("", type="password", placeholder="Enter password",
+                       label_visibility="collapsed")
+    _, mid, _ = st.columns([1, 2, 1])
+    with mid:
+        if st.button("Sign in", use_container_width=True, type="primary"):
+            if pw == st.secrets["app_password"]:
+                st.session_state["auth"] = True; st.rerun()
+            else:
+                st.error("Incorrect password.")
+    return False
+
+
+# ── HTML helpers ───────────────────────────────────────────
+
+def badge_html(status: str) -> str:
+    labels = {"done": "Done", "skipped": "Skipped", "pending": "Pending"}
+    return f'<span class="nt-badge {status}">{labels.get(status, "Pending")}</span>'
+
+def person_header(person: str) -> str:
+    if person == "p1":
+        return ('<div class="nt-person p1"><div class="nt-person-avatar">P1</div>'
+                '<div><div class="nt-person-name">Person 1</div>'
+                '<div class="nt-person-role">Vegetarian</div></div></div>')
+    return ('<div class="nt-person p2"><div class="nt-person-avatar">P2</div>'
+            '<div><div class="nt-person-name">Person 2</div>'
+            '<div class="nt-person-role">Non-veg · Runner</div></div></div>')
+
+def section_label(text: str, mt: bool = True) -> str:
+    s = "margin-top:0" if not mt else ""
+    return f'<div class="nt-section-label" style="{s}">{text}</div>'
+
+def calendar_html(y, m, all_t, sel) -> str:
+    fdow  = cal_lib.monthrange(y, m)[0]
+    ndays = cal_lib.monthrange(y, m)[1]
+    hdr   = "".join(f'<div class="nt-cal-hdr">{d}</div>'
+                    for d in ["Mo","Tu","We","Th","Fr","Sa","Su"])
+    cells = '<div class="nt-cal-empty"></div>' * fdow
+    for n in range(1, ndays + 1):
+        d   = date(y, m, n)
+        ex  = (" nt-cal-today" if d == TODAY else "") + (" nt-cal-sel" if d == sel else "")
+        if d > TODAY:
+            css = "nt-cal-future"
+        else:
+            p   = day_pct(d, all_t)
+            css = "nt-cal-none" if p == 0 else "nt-cal-part" if p < 0.8 else "nt-cal-full"
+        cells += f'<div class="nt-cal-day {css}{ex}">{n}</div>'
+    legend = """<div class="nt-cal-legend">
+      <div class="nt-cal-leg"><div class="nt-cal-dot" style="background:var(--ocean-100);border:1px solid var(--ocean-400)"></div>Fully tracked</div>
+      <div class="nt-cal-leg"><div class="nt-cal-dot" style="background:rgba(224,242,254,.7);border:1px solid var(--sky-400)"></div>Partial</div>
+      <div class="nt-cal-leg"><div class="nt-cal-dot" style="background:rgba(255,255,255,.5);border:1px solid var(--border-md)"></div>Not started</div>
+    </div>"""
+    return (f'<div class="nt-cal-wrap">'
+            f'<div class="nt-cal-grid">{hdr}{cells}</div>{legend}</div>')
+
+
+# ── Meal card with CRUD controls ───────────────────────────
+
+def meal_card_crud(
+    d: date, person: str, idx: int,
+    meal: dict, meals: list,
+    day_entries: dict, is_future: bool
+):
+    """
+    Renders a single meal card with:
+    - Status tracking (done/skip)
+    - Note + photo
+    - Reorder (▲▼)
+    - Inline edit (slot + desc)
+    - Delete
+    """
+    day_name  = DAYS[d.weekday()]
+    # Always read live slot/desc from session-state-backed plan
+    _live_plan = load_day_plan(DAYS[d.weekday()], person)
+    if idx < len(_live_plan):
+        slot      = _live_plan[idx]["slot"]
+        plan_desc = _live_plan[idx]["desc"]
+    else:
+        slot      = meal.get("slot", "")
+        plan_desc = meal.get("desc", "")
+
+    entry     = dict(day_entries.get(tk(d, person, idx),
+                     {"status": "pending", "comment": "", "image_url": "", "planned_desc": ""}))
+    status    = entry.get("status", "pending")
+    comment   = entry.get("comment", "")
+    image_url = entry.get("image_url", "")
+    # Use planned_desc snapshot only for past days (preserves history).
+    # For today or future always show the live plan so edits are instant.
+    disp_desc = (entry.get("planned_desc") or plan_desc) if d < TODAY else plan_desc
+
+    uid       = f"{d.isoformat()}_{person}_{idx}"
+    edit_key  = f"edit_{uid}"
+    del_key   = f"del_confirm_{uid}"
+
+    is_editing  = st.session_state.get(edit_key, False)
+    is_noting   = st.session_state.get("active_note") == uid
+    is_deleting = st.session_state.get(del_key, False)
+
+    # ── Card HTML ──────────────────────────────────────────
+    css = "nt-meal" + (" done" if status=="done" else " skipped" if status=="skipped" else "")
+    st.markdown(
+        f'<div class="{css}">'
+        f'<div class="nt-meal-row">'
+        f'<div class="nt-meal-body">'
+        f'<div class="nt-meal-slot">{slot}</div>'
+        f'<div class="nt-meal-desc">{disp_desc}</div>'
+        f'</div>'
+        f'<div>{badge_html(status)}</div>'
+        f'</div></div>', unsafe_allow_html=True)
+
+    if image_url:
+        # Thumbnail row with expand toggle
+        img_open_key = f"img_open_{uid}"
+        thumb_col, expand_col = st.columns([4, 1])
+        with thumb_col:
+            st.image(image_url, width=90)
+        with expand_col:
+            expand_label = "🔍 Close" if st.session_state.get(img_open_key) else "🔍 View"
+            if st.button(expand_label, key=f"imgbtn_{uid}", use_container_width=True):
+                st.session_state[img_open_key] = not st.session_state.get(img_open_key, False)
+        if st.session_state.get(img_open_key):
+            st.image(image_url, use_container_width=True)
+
+    if comment and not is_noting:
+        st.markdown(f'<div class="nt-note">💬 {comment}</div>', unsafe_allow_html=True)
+
+    # ── Action rows ────────────────────────────────────────
+    if not is_future:
+        # Row 1: two status buttons — clear labels
+        r1a, r1b = st.columns(2)
+        with r1a:
+            lbl = "✅  Done" if status != "done" else "↩  Undo"
+            if st.button(lbl, key=f"done_{uid}", use_container_width=True):
+                entry["status"] = "done" if status != "done" else "pending"
+                if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
+                update_entry(d.isoformat(), tk(d, person, idx), entry)
+                st.rerun(scope="fragment")
+        with r1b:
+            lbl = "⏭  Skip" if status != "skipped" else "↩  Undo"
+            if st.button(lbl, key=f"skip_{uid}", use_container_width=True):
+                entry["status"] = "skipped" if status != "skipped" else "pending"
+                if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
+                update_entry(d.isoformat(), tk(d, person, idx), entry)
+                st.rerun(scope="fragment")
+        # Row 2: compact icon buttons
+        ic1, ic2, ic3, ic4 = st.columns(4)
+        with ic1:
+            note_icon = "✏️" if (comment or image_url) else "📝"
+            if st.button(note_icon, key=f"nbt_{uid}", use_container_width=True,
+                         help="Note / photo"):
+                st.session_state["active_note"] = uid if not is_noting else None
+        with ic2:
+            if idx > 0:
+                if st.button("▲", key=f"mup_{uid}", use_container_width=True,
+                             help="Move up"):
+                    meals[idx], meals[idx-1] = meals[idx-1], meals[idx]
+                    save_day_plan(day_name, person, meals)
+                    st.rerun(scope="fragment")
+            else:
+                st.write("")
+        with ic3:
+            if idx < len(meals) - 1:
+                if st.button("▼", key=f"mdn_{uid}", use_container_width=True,
+                             help="Move down"):
+                    meals[idx], meals[idx+1] = meals[idx+1], meals[idx]
+                    save_day_plan(day_name, person, meals)
+                    st.rerun(scope="fragment")
+            else:
+                st.write("")
+        with ic4:
+            if st.button("⚙️", key=f"edt_{uid}", use_container_width=True,
+                         help="Edit / delete"):
+                st.session_state[edit_key] = not is_editing
+                if is_deleting:
+                    st.session_state[del_key] = False
+
+    else:
+        # Future date — plan view only, can reorder/edit but no tracking
+        st.caption("📅 Future — plan view only")
+        fi1, fi2, fi3 = st.columns(3)
+        with fi1:
+            if idx > 0:
+                if st.button("▲", key=f"mup_f_{uid}", use_container_width=True,
+                             help="Move up"):
+                    meals[idx], meals[idx-1] = meals[idx-1], meals[idx]
+                    save_day_plan(day_name, person, meals)
+                    st.rerun(scope="fragment")
+        with fi2:
+            if idx < len(meals) - 1:
+                if st.button("▼", key=f"mdn_f_{uid}", use_container_width=True,
+                             help="Move down"):
+                    meals[idx], meals[idx+1] = meals[idx+1], meals[idx]
+                    save_day_plan(day_name, person, meals)
+                    st.rerun(scope="fragment")
+        with fi3:
+            if st.button("⚙️", key=f"edt_f_{uid}", use_container_width=True,
+                         help="Edit / delete"):
+                st.session_state[edit_key] = not is_editing
+    # ── Note / photo panel ─────────────────────────────────
+    if is_noting and not is_future:
+        nc = st.text_area("Note", value=comment, key=f"ta_{uid}",
+                          placeholder="Add a note, substitution, or observation…",
+                          label_visibility="collapsed", height=72)
+        up = st.file_uploader("Attach a photo", type=["jpg","jpeg","png","heic"],
+                              key=f"slot_{uid}", label_visibility="collapsed")
+        cs, cr = st.columns(2)
+        with cs:
+            if st.button("Save note", key=f"sv_{uid}", use_container_width=True):
+                entry["comment"] = nc
+                if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
+                if up:
+                    with st.spinner("Uploading photo…"):
+                        url = upload_photo(up.read(), up.name)
+                    if url:
+                        entry["image_url"] = url
+                    else:
+                        st.error("Upload failed — please try again.")
+                        st.stop()
+                update_entry(d.isoformat(), tk(d, person, idx), entry)
+                st.session_state["active_note"] = None
+                st.rerun(scope="fragment")
+        with cr:
+            if image_url and st.button("Remove photo", key=f"rm_{uid}", use_container_width=True):
+                entry["image_url"] = ""
+                update_entry(d.isoformat(), tk(d, person, idx), entry)
+                st.rerun(scope="fragment")
+
+    # ── Inline edit panel ──────────────────────────────────
+    if is_editing:
+        # Use session-state-backed draft values so widget state never goes stale.
+        # On first open, seed from current plan. On rerun, keep draft as-is.
+        draft_slot_key = f"draft_slot_{uid}"
+        draft_desc_key = f"draft_desc_{uid}"
+        if draft_slot_key not in st.session_state:
+            st.session_state[draft_slot_key] = slot
+        if draft_desc_key not in st.session_state:
+            st.session_state[draft_desc_key] = plan_desc
+
+        st.markdown('<div style="background:rgba(13,148,136,.04);border:1px solid var(--border-md);'
+                    'border-radius:var(--r-md);padding:12px;margin-top:6px">', unsafe_allow_html=True)
+
+        # Use on_change to keep draft in sync without needing Save to read widget value
+        def _sync_slot():
+            st.session_state[draft_slot_key] = st.session_state[f"nes_{uid}"]
+        def _sync_desc():
+            st.session_state[draft_desc_key] = st.session_state[f"ned_{uid}"]
+
+        st.text_input("Slot / time",
+                      value=st.session_state[draft_slot_key],
+                      key=f"nes_{uid}",
+                      label_visibility="collapsed",
+                      placeholder="e.g. Breakfast · 8:30 AM",
+                      on_change=_sync_slot)
+        st.text_area("Description",
+                     value=st.session_state[draft_desc_key],
+                     key=f"ned_{uid}",
+                     label_visibility="collapsed",
+                     placeholder="Meal description",
+                     height=72,
+                     on_change=_sync_desc)
+
+        e1, e2, e3 = st.columns(3)
+        with e1:
+            if st.button("Save", key=f"esv_{uid}", use_container_width=True):
+                new_slot = st.session_state.get(draft_slot_key, slot).strip() or slot
+                new_desc = st.session_state.get(draft_desc_key, plan_desc).strip() or plan_desc
+                # Update the live plan
+                live = load_day_plan(day_name, person)
+                if idx < len(live):
+                    live[idx] = {"slot": new_slot, "desc": new_desc}
+                    save_day_plan(day_name, person, live)
+                # Clear draft + close panel
+                st.session_state.pop(draft_slot_key, None)
+                st.session_state.pop(draft_desc_key, None)
+                # Clear widget state so text inputs re-seed from new plan on next open
+                st.session_state.pop(f"nes_{uid}", None)
+                st.session_state.pop(f"ned_{uid}", None)
+                st.session_state[edit_key] = False
+                st.rerun(scope="fragment")
+        with e2:
+            if st.button("Cancel", key=f"ecn_{uid}", use_container_width=True):
+                st.session_state.pop(draft_slot_key, None)
+                st.session_state.pop(draft_desc_key, None)
+                st.session_state.pop(f"nes_{uid}", None)
+                st.session_state.pop(f"ned_{uid}", None)
+                st.session_state[edit_key] = False
+                st.rerun(scope="fragment")
+        with e3:
+            if st.button("🗑️ Delete", key=f"edel_{uid}", use_container_width=True):
+                st.session_state[del_key] = not is_deleting
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # ── Delete confirm ─────────────────────────────────────
+    if is_deleting:
+        st.warning(f"Delete **{slot}**? This cannot be undone.")
+        dc1, dc2 = st.columns(2)
+        with dc1:
+            if st.button("Yes, delete", key=f"dyes_{uid}", use_container_width=True):
+                meals.pop(idx)
+                save_day_plan(day_name, person, meals)
+                st.session_state.pop(del_key, None)
+                st.session_state.pop(edit_key, None)
+                st.rerun(scope="fragment")
+        with dc2:
+            if st.button("Cancel", key=f"dno_{uid}", use_container_width=True):
+                st.session_state[del_key] = False
+                st.rerun(scope="fragment")
+
+    st.markdown("<div style='margin-bottom:4px'></div>", unsafe_allow_html=True)
+
+
+# ── Snacks ─────────────────────────────────────────────────
+
+def render_snacks(d: date, person: str):
+    st.markdown(section_label("Extra & unplanned"), unsafe_allow_html=True)
+    snacks = fs_list("snacks", filters=[{"field":"date","value":d.isoformat()},
+                                        {"field":"person","value":person}])
+    for s in snacks:
+        ts = s.get("timestamp", "")
+        if "T" in ts:
+            try: ts = datetime.fromisoformat(ts.replace("Z","+00:00")).strftime("%I:%M %p")
+            except: ts = ""
+        time_part = f" · {ts}" if ts else ""
+        st.markdown(
+            f'<div class="nt-snack"><div class="nt-snack-label">Snack{time_part}</div>'
+            f'<div class="nt-snack-desc">{s.get("desc","")}</div></div>',
+            unsafe_allow_html=True)
+        if s.get("image_url"):
+            simg_key = f"simg_open_{s['id']}"
+            sc1, sc2 = st.columns([4, 1])
+            with sc1:
+                st.image(s["image_url"], width=90)
+            with sc2:
+                slbl = "🔍 Close" if st.session_state.get(simg_key) else "🔍 View"
+                if st.button(slbl, key=f"sib_{s['id']}", use_container_width=True):
+                    st.session_state[simg_key] = not st.session_state.get(simg_key, False)
+            if st.session_state.get(simg_key):
+                st.image(s["image_url"], use_container_width=True)
+        if st.button("Remove", key=f"del_{s['id']}"):
+            threading.Thread(target=fs_del, args=("snacks", s["id"]),
+                             daemon=True).start()
+            st.rerun(scope="fragment")
+
+    if d <= TODAY:
+        ak = f"add_{d.isoformat()}_{person}"
+        if st.button("+ Log a snack", key=f"btn_{ak}"):
+            st.session_state[ak] = not st.session_state.get(ak, False)
+        if st.session_state.get(ak, False):
+            desc = st.text_input("What did you have?", key=f"desc_{ak}",
+                                 label_visibility="collapsed",
+                                 placeholder="e.g. 1 chai + 2 biscuits…")
+            img = st.file_uploader("Photo (optional)", type=["jpg","jpeg","png","heic"],
+                                   key=f"simg_{ak}", label_visibility="collapsed")
+            if st.button("Save snack", key=f"log_{ak}", use_container_width=True):
+                if desc.strip():
+                    img_url = ""
+                    if img:
+                        with st.spinner("Uploading…"):
+                            img_url = upload_photo(img.read(), img.name)
+                    fs_add("snacks", {
+                        "date": d.isoformat(), "person": person,
+                        "desc": desc.strip(),  "image_url": img_url,
+                        "timestamp": datetime.now(IST).isoformat(),
+                    })
+                    st.session_state[ak] = False; st.rerun(scope="fragment")
+                else:
+                    st.warning("Please describe what you had.")
+
+
+# ── Add meal form ──────────────────────────────────────────
+
+def add_meal_form(d: date, person: str, meals: list):
+    day_name = DAYS[d.weekday()]
+    ak = f"addmeal_{d.isoformat()}_{person}"
+
+    if st.button("＋ Add a meal", key=f"ambt_{d.isoformat()}_{person}", use_container_width=True):
+        st.session_state[ak] = not st.session_state.get(ak, False)
+
+    if st.session_state.get(ak, False):
+        st.markdown(
+            '<div style="background:rgba(13,148,136,.04);border:1px solid var(--border-md);'
+            'border-radius:var(--r-md);padding:12px;margin-top:6px">',
+            unsafe_allow_html=True)
+        ns = st.text_input("Slot / time", key=f"ams_{ak}",
+                           label_visibility="collapsed",
+                           placeholder="e.g. Post-workout · 9 AM")
+        nd = st.text_area("Description", key=f"amd_{ak}",
+                          label_visibility="collapsed",
+                          placeholder="What will this meal contain?", height=72)
+        a1, a2 = st.columns(2)
+        with a1:
+            if st.button("Add meal", key=f"amc_{ak}", use_container_width=True):
+                if ns.strip() and nd.strip():
+                    meals.append({"slot": ns.strip(), "desc": nd.strip()})
+                    save_day_plan(day_name, person, meals)
+                    st.session_state[ak] = False
+                    st.rerun(scope="fragment")
+                else:
+                    st.warning("Both slot and description are required.")
+        with a2:
+            if st.button("Cancel", key=f"amx_{ak}", use_container_width=True):
+                st.session_state[ak] = False; st.rerun(scope="fragment")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+
+# ── Per-person meal list — fragment so note/edit reruns stay isolated ─────
+
+@st.fragment
+def render_person_meals(d: date, person: str, is_future: bool, plan_version: int = 0):
+    """
+    Fragment — partial reruns only.
+    plan_version changes whenever save_day_plan is called, forcing Streamlit
+    to re-execute the fragment body (not serve a cached render).
+    """
+    day_name = DAYS[d.weekday()]
+    meals    = load_day_plan(day_name, person)
+    day_ent  = load_day_entries(d.isoformat())
+
+    st.markdown(person_header(person), unsafe_allow_html=True)
+    for i, meal in enumerate(meals):
+        meal_card_crud(d, person, i, meal, meals, day_ent, is_future)
+    add_meal_form(d, person, meals)
+    if not is_future:
+        render_snacks(d, person)
+
+
+# ── Page: Tracker ──────────────────────────────────────────
+
+def page_tracker():
+    for k, v in [("sel_date", TODAY), ("cal_year", TODAY.year), ("cal_month", TODAY.month)]:
+        if k not in st.session_state: st.session_state[k] = v
+
+    sel = st.date_input("", value=st.session_state.sel_date,
+                        min_value=date(2025, 1, 1), max_value=date(2026, 9, 30),
+                        label_visibility="collapsed")
+    if sel != st.session_state.sel_date:
+        st.session_state.update(sel_date=sel, cal_year=sel.year, cal_month=sel.month)
+        st.rerun()
+
+    d = st.session_state.sel_date
+
+    with st.expander("📅  Monthly overview", expanded=False):
+        y, m  = st.session_state.cal_year, st.session_state.cal_month
+        all_t = load_all_tracking()
+        nc1, nc2, nc3 = st.columns([1, 4, 1])
+        with nc1:
+            if st.button("◀", key="cp", use_container_width=True):
+                if m == 1: st.session_state.cal_year -= 1; st.session_state.cal_month = 12
+                else:      st.session_state.cal_month -= 1
+                st.rerun()
+        with nc2:
+            st.markdown(f'<div class="nt-cal-month" style="text-align:center;padding-top:6px">'
+                        f'{cal_lib.month_name[m]} {y}</div>', unsafe_allow_html=True)
+        with nc3:
+            if (y, m) < (TODAY.year, TODAY.month):
+                if st.button("▶", key="cn", use_container_width=True):
+                    if m == 12: st.session_state.cal_year += 1; st.session_state.cal_month = 1
+                    else:       st.session_state.cal_month += 1
+                    st.rerun()
+        st.markdown(calendar_html(y, m, all_t, d), unsafe_allow_html=True)
+
+    day_name  = DAYS[d.weekday()]
+    p1_meals  = load_day_plan(day_name, "p1")
+    p2_meals  = load_day_plan(day_name, "p2")
+    day_ent   = load_day_entries(d.isoformat())
+    is_future = d > TODAY
+
+    # Stats
+    done_n = sum(
+        1 for p, ms in [("p1", p1_meals), ("p2", p2_meals)]
+        for i in range(len(ms))
+        if day_ent.get(tk(d, p, i), {}).get("status", "pending") == "done"
+    )
+    skipped_n = sum(
+        1 for p, ms in [("p1", p1_meals), ("p2", p2_meals)]
+        for i in range(len(ms))
+        if day_ent.get(tk(d, p, i), {}).get("status", "pending") == "skipped"
+    )
+    total_n   = len(p1_meals) + len(p2_meals)
+    tracked_n = done_n + skipped_n
+    pct       = round(tracked_n / total_n * 100) if total_n else 0
+    label     = "Today" if d == TODAY else d.strftime("%A, %d %b %Y")
+
+    st.markdown(
+        f'<div class="nt-stats">'
+        f'<div class="nt-stat"><div class="nt-stat-val">{done_n}</div>'
+        f'<div class="nt-stat-lbl">Done</div></div>'
+        f'<div class="nt-stat"><div class="nt-stat-val accent">{skipped_n}</div>'
+        f'<div class="nt-stat-lbl">Skipped</div></div>'
+        f'<div class="nt-stat"><div class="nt-stat-val">{pct}%</div>'
+        f'<div class="nt-stat-lbl">Complete</div></div>'
+        f'</div>'
+        f'<div class="nt-progress-wrap">'
+        f'<div class="nt-progress-fill" style="width:{pct}%"></div>'
+        f'</div>'
+        f'<div class="nt-progress-label">{label} · {tracked_n} of {total_n} meals tracked</div>',
+        unsafe_allow_html=True)
+
+    t1, t2 = st.tabs(["👤  Person 1 · Veg", "🏃  Person 2 · Runner"])
+
+    pv = st.session_state.get("_plan_version", 0)
+    with t1:
+        render_person_meals(d, "p1", is_future, pv)
+
+    with t2:
+        render_person_meals(d, "p2", is_future, pv)
+
+
+# ── Page: Measurements ─────────────────────────────────────
+
+def last_date(docs, field):
+    hits = [d for d in docs if d.get(field) is not None]
+    return hits[-1].get("date") if hits else None
+
+def is_due(last_str, days):
+    if not last_str: return True
+    return (TODAY - date.fromisoformat(last_str)).days >= days
+
+def page_measurements():
+    st.markdown(section_label("Body metrics", mt=False), unsafe_allow_html=True)
+    t1, t2 = st.tabs(["👤  Person 1", "🏃  Person 2"])
+
+    for tab, person in [(t1, "p1"), (t2, "p2")]:
+        with tab:
+            docs = sorted(
+                fs_list("measurements", filters=[{"field": "person", "value": person}]),
+                key=lambda x: x.get("date", ""),
+            )
+
+            # ── Weight section ──────────────────────────────
+            lw      = last_date(docs, "weight")
+            wdue    = is_due(lw, 7)
+            wbadge  = "nt-due-now" if wdue else "nt-due-ok"
+            wstatus = "Log now" if wdue else "Up to date"
+            wlast   = f'<div class="nt-meas-last">Last entry: {lw}</div>' if lw else ""
+            st.markdown(
+                f'<div class="nt-meas-card"><div class="nt-meas-header">'
+                f'<div class="nt-meas-title">Weight</div>'
+                f'<span class="nt-due-badge {wbadge}">{wstatus}</span>'
+                f'</div><div style="font-size:11px;color:var(--n400)">Log weekly</div>'
+                f'{wlast}</div>', unsafe_allow_html=True)
+            with st.expander("Log weight entry", expanded=wdue):
+                wv = st.number_input("Weight (kg)", 30.0, 200.0, step=0.1,
+                                     key=f"wv_{person}", format="%.1f")
+                wd = st.date_input("Date", TODAY, max_value=TODAY, key=f"wd_{person}")
+                if st.button("Save weight", key=f"swt_{person}", use_container_width=True):
+                    ex = fs_get("measurements", f"{person}_{wd.isoformat()}") or {}
+                    ex.update({"person": person, "date": wd.isoformat(), "weight": float(wv)})
+                    fs_set("measurements", f"{person}_{wd.isoformat()}", ex)
+                    st.success(f"✓  {wv} kg saved for {wd}"); st.rerun()
+
+            # Weight chart + log
+            wt_rows = [(r["date"], r["weight"]) for r in docs if r.get("weight") is not None]
+            if wt_rows:
+                st.markdown(section_label("Weight history"), unsafe_allow_html=True)
+                if len(wt_rows) >= 2:
+                    import altair as alt, pandas as pd
+                    df = pd.DataFrame(wt_rows, columns=["Date", "Weight (kg)"])
+                    df["Date"] = pd.to_datetime(df["Date"])
+                    chart = (
+                        alt.Chart(df)
+                        .mark_line(
+                            color="#0D9488", strokeWidth=2.5, point=alt.OverlayMarkDef(
+                                color="#0D9488", size=60, filled=True)
+                        )
+                        .encode(
+                            x=alt.X("Date:T", title="Date",
+                                    axis=alt.Axis(format="%d %b", labelAngle=-30)),
+                            y=alt.Y("Weight (kg):Q",
+                                    scale=alt.Scale(zero=False),
+                                    title="kg"),
+                            tooltip=[
+                                alt.Tooltip("Date:T", format="%d %b %Y"),
+                                alt.Tooltip("Weight (kg):Q", format=".1f"),
+                            ]
+                        )
+                        .properties(height=220)
+                        .configure_view(strokeWidth=0)
+                        .configure_axis(
+                            grid=True, gridColor="#E2F4F1", gridOpacity=0.8,
+                            labelColor="#6AADA4", titleColor="#254845",
+                            domainColor="#9ACEC7"
+                        )
+                    )
+                    st.altair_chart(chart, use_container_width=True)
+                else:
+                    st.caption("Log at least 2 entries to see the trend chart.")
+
+                # Log table
+                with st.expander(f"All weight entries ({len(wt_rows)})", expanded=False):
+                    # Latest first
+                    for dt, val in reversed(wt_rows):
+                        delta_str = ""
+                        # Calculate delta vs previous
+                        ri = next((i for i, r in enumerate(wt_rows) if r[0] == dt), None)
+                        if ri is not None and ri > 0:
+                            prev = wt_rows[ri - 1][1]
+                            delta = val - prev
+                            arrow = "▲" if delta > 0 else "▼" if delta < 0 else "—"
+                            color = "#E24B4A" if delta > 0 else "#0D9488" if delta < 0 else "#9ACEC7"
+                            delta_str = f'<span style="color:{color};font-size:11px;margin-left:6px">{arrow} {abs(delta):.1f} kg</span>'
+                        st.markdown(
+                            f'<div style="display:flex;justify-content:space-between;'
+                            f'align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">'
+                            f'<span style="font-size:13px;color:var(--n600)">{dt}</span>'
+                            f'<span style="font-size:14px;font-weight:600;color:var(--ocean-800)">{val:.1f} kg{delta_str}</span>'
+                            f'</div>', unsafe_allow_html=True)
+
+            # ── Hip & Waist section ─────────────────────────
+            lh      = last_date(docs, "hip")
+            hdue    = is_due(lh, 14)
+            hbadge  = "nt-due-now" if hdue else "nt-due-ok"
+            hstatus = "Log now" if hdue else "Up to date"
+            hlast   = f'<div class="nt-meas-last">Last entry: {lh}</div>' if lh else ""
+            st.markdown(
+                f'<div class="nt-meas-card" style="margin-top:6px"><div class="nt-meas-header">'
+                f'<div class="nt-meas-title">Hip & Waist</div>'
+                f'<span class="nt-due-badge {hbadge}">{hstatus}</span>'
+                f'</div><div style="font-size:11px;color:var(--n400)">Log fortnightly</div>'
+                f'{hlast}</div>', unsafe_allow_html=True)
+            with st.expander("Log hip & waist entry", expanded=hdue):
+                hc1, hc2 = st.columns(2)
+                with hc1:
+                    hv = st.number_input("Hip (cm)", 50.0, 200.0, step=0.5,
+                                         key=f"hv_{person}", format="%.1f")
+                with hc2:
+                    wv2 = st.number_input("Waist (cm)", 40.0, 200.0, step=0.5,
+                                          key=f"wstv_{person}", format="%.1f")
+                hd = st.date_input("Date", TODAY, max_value=TODAY, key=f"hd_{person}")
+                if st.button("Save measurements", key=f"shw_{person}", use_container_width=True):
+                    ex = fs_get("measurements", f"{person}_{hd.isoformat()}") or {}
+                    ex.update({"person": person, "date": hd.isoformat(),
+                                "hip": float(hv), "waist": float(wv2)})
+                    fs_set("measurements", f"{person}_{hd.isoformat()}", ex)
+                    st.success(f"✓  Hip {hv} cm · Waist {wv2} cm saved"); st.rerun()
+
+            # Hip & waist chart + log
+            hw_rows = [(r["date"], r.get("hip"), r.get("waist"))
+                       for r in docs if r.get("hip") is not None]
+            if hw_rows:
+                st.markdown(section_label("Hip & Waist history"), unsafe_allow_html=True)
+                if len(hw_rows) >= 2:
+                    import altair as alt, pandas as pd
+                    df2 = pd.DataFrame([
+                        {"Date": pd.to_datetime(r[0]), "cm": r[1], "Measurement": "Hip"}
+                        for r in hw_rows if r[1]
+                    ] + [
+                        {"Date": pd.to_datetime(r[0]), "cm": r[2], "Measurement": "Waist"}
+                        for r in hw_rows if r[2]
+                    ])
+                    color_scale = alt.Scale(
+                        domain=["Hip", "Waist"],
+                        range=["#0D9488", "#38BDF8"]
+                    )
+                    chart2 = (
+                        alt.Chart(df2)
+                        .mark_line(strokeWidth=2.5, point=alt.OverlayMarkDef(size=60, filled=True))
+                        .encode(
+                            x=alt.X("Date:T", title="Date",
+                                    axis=alt.Axis(format="%d %b", labelAngle=-30)),
+                            y=alt.Y("cm:Q", scale=alt.Scale(zero=False), title="cm"),
+                            color=alt.Color("Measurement:N", scale=color_scale,
+                                            legend=alt.Legend(orient="top-left",
+                                                              labelColor="#254845",
+                                                              titleColor="#254845")),
+                            tooltip=[
+                                alt.Tooltip("Date:T", format="%d %b %Y"),
+                                alt.Tooltip("Measurement:N"),
+                                alt.Tooltip("cm:Q", format=".1f"),
+                            ]
+                        )
+                        .properties(height=220)
+                        .configure_view(strokeWidth=0)
+                        .configure_axis(
+                            grid=True, gridColor="#E2F4F1", gridOpacity=0.8,
+                            labelColor="#6AADA4", titleColor="#254845",
+                            domainColor="#9ACEC7"
+                        )
+                    )
+                    st.altair_chart(chart2, use_container_width=True)
+                else:
+                    st.caption("Log at least 2 entries to see the trend chart.")
+
+                # Log table
+                with st.expander(f"All hip & waist entries ({len(hw_rows)})", expanded=False):
+                    for dt, hip, waist in reversed(hw_rows):
+                        st.markdown(
+                            f'<div style="display:flex;justify-content:space-between;'
+                            f'align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">'
+                            f'<span style="font-size:13px;color:var(--n600)">{dt}</span>'
+                            f'<span style="font-size:13px;font-weight:600;color:var(--ocean-800)">'
+                            f'Hip: {hip:.1f} cm&nbsp;&nbsp;·&nbsp;&nbsp;Waist: {waist:.1f} cm</span>'
+                            f'</div>', unsafe_allow_html=True)
+
+            if not wt_rows and not hw_rows:
+                st.info("No measurements logged yet. Start logging to see your progress trends here.")

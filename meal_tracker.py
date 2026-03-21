@@ -301,16 +301,34 @@ def reset_day_plan(day: str, person: str):
 def tk(d: date, person, idx):
     return f"{d.isoformat()}_{person}_{idx}"
 
-@st.cache_data(ttl=20)
-def load_day_entries(date_str: str) -> dict:
-    return {doc["id"]: doc for doc in fs_list("tracking") if doc["id"].startswith(date_str + "_")}
-
 @st.cache_data(ttl=30)
 def load_all_tracking() -> dict:
     return {doc["id"]: doc for doc in fs_list("tracking")}
 
+def load_day_entries(date_str: str) -> dict:
+    """Session-state backed cache — instant on rerun after first load."""
+    sk = f"_de_{date_str}"
+    if sk not in st.session_state:
+        st.session_state[sk] = {
+            doc["id"]: doc
+            for doc in fs_list("tracking")
+            if doc["id"].startswith(date_str + "_")
+        }
+    return st.session_state[sk]
+
+def update_entry(date_str: str, doc_id: str, entry: dict):
+    """Write entry to session state first (instant), then Firestore."""
+    sk = f"_de_{date_str}"
+    if sk not in st.session_state:
+        st.session_state[sk] = {}
+    st.session_state[sk][doc_id] = entry
+    fs_set("tracking", doc_id, entry)
+    load_all_tracking.clear()
+
 def bust_tracking(date_str: str):
-    load_day_entries.clear()
+    sk = f"_de_{date_str}"
+    if sk in st.session_state:
+        del st.session_state[sk]
     load_all_tracking.clear()
 
 def day_pct(d: date, all_t: dict) -> float:
@@ -452,15 +470,15 @@ def meal_card_crud(
             if st.button(lbl, key=f"done_{uid}", use_container_width=True):
                 entry["status"] = "done" if status != "done" else "pending"
                 if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
-                fs_set("tracking", tk(d, person, idx), entry)
-                bust_tracking(d.isoformat()); st.rerun()
+                update_entry(d.isoformat(), tk(d, person, idx), entry)
+                st.rerun()
         with c2:
             lbl = "Mark as skipped" if status != "skipped" else "↩ Undo skip"
             if st.button(lbl, key=f"skip_{uid}", use_container_width=True):
                 entry["status"] = "skipped" if status != "skipped" else "pending"
                 if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
-                fs_set("tracking", tk(d, person, idx), entry)
-                bust_tracking(d.isoformat()); st.rerun()
+                update_entry(d.isoformat(), tk(d, person, idx), entry)
+                st.rerun()
         with c3:
             # Note/photo
             icon = "✏️" if (comment or image_url) else "📝"
@@ -469,7 +487,7 @@ def meal_card_crud(
         with c4:
             # Move up
             if idx > 0:
-                if st.button("▲", key=f"up_{uid}", use_container_width=True):
+                if st.button("▲", key=f"mup_{uid}", use_container_width=True):
                     meals[idx], meals[idx-1] = meals[idx-1], meals[idx]
                     save_day_plan(day_name, person, meals)
                     st.rerun()
@@ -478,7 +496,7 @@ def meal_card_crud(
         with c5:
             # Move down
             if idx < len(meals) - 1:
-                if st.button("▼", key=f"dn_{uid}", use_container_width=True):
+                if st.button("▼", key=f"mdn_{uid}", use_container_width=True):
                     meals[idx], meals[idx+1] = meals[idx+1], meals[idx]
                     save_day_plan(day_name, person, meals)
                     st.rerun()
@@ -486,7 +504,7 @@ def meal_card_crud(
                 st.markdown("<div style='height:36px'></div>", unsafe_allow_html=True)
         with c6:
             # Edit / delete toggle
-            if st.button("⚙️", key=f"ebt_{uid}", use_container_width=True):
+            if st.button("⚙️", key=f"edt_{uid}", use_container_width=True):
                 st.session_state[edit_key] = not is_editing
                 if is_deleting:
                     st.session_state[del_key] = False
@@ -496,18 +514,18 @@ def meal_card_crud(
         c4, c5, c6 = st.columns([1, 1, 1])
         with c4:
             if idx > 0:
-                if st.button("▲", key=f"up_{uid}", use_container_width=True):
+                if st.button("▲", key=f"mup_f_{uid}", use_container_width=True):
                     meals[idx], meals[idx-1] = meals[idx-1], meals[idx]
                     save_day_plan(day_name, person, meals)
                     st.rerun()
         with c5:
             if idx < len(meals) - 1:
-                if st.button("▼", key=f"dn_{uid}", use_container_width=True):
+                if st.button("▼", key=f"mdn_f_{uid}", use_container_width=True):
                     meals[idx], meals[idx+1] = meals[idx+1], meals[idx]
                     save_day_plan(day_name, person, meals)
                     st.rerun()
         with c6:
-            if st.button("⚙️", key=f"ebt_{uid}", use_container_width=True):
+            if st.button("⚙️", key=f"edt_f_{uid}", use_container_width=True):
                 st.session_state[edit_key] = not is_editing
 
     # ── Note / photo panel ─────────────────────────────────
@@ -516,7 +534,7 @@ def meal_card_crud(
                           placeholder="Add a note, substitution, or observation…",
                           label_visibility="collapsed", height=72)
         up = st.file_uploader("Attach a photo", type=["jpg","jpeg","png","heic"],
-                              key=f"up_{uid}", label_visibility="collapsed")
+                              key=f"slot_{uid}", label_visibility="collapsed")
         cs, cr = st.columns(2)
         with cs:
             if st.button("Save note", key=f"sv_{uid}", use_container_width=True):
@@ -526,24 +544,23 @@ def meal_card_crud(
                     with st.spinner("Uploading…"):
                         url = upload_photo(up.read(), up.name)
                     if url: entry["image_url"] = url
-                fs_set("tracking", tk(d, person, idx), entry)
-                bust_tracking(d.isoformat())
+                update_entry(d.isoformat(), tk(d, person, idx), entry)
                 st.session_state[note_key] = False
                 st.rerun()
         with cr:
             if image_url and st.button("Remove photo", key=f"rm_{uid}", use_container_width=True):
                 entry["image_url"] = ""
-                fs_set("tracking", tk(d, person, idx), entry)
-                bust_tracking(d.isoformat()); st.rerun()
+                update_entry(d.isoformat(), tk(d, person, idx), entry)
+                st.rerun()
 
     # ── Inline edit panel ──────────────────────────────────
     if is_editing:
         st.markdown('<div style="background:rgba(13,148,136,.04);border:1px solid var(--border-md);'
                     'border-radius:var(--r-md);padding:12px;margin-top:6px">', unsafe_allow_html=True)
-        ns = st.text_input("Slot / time", value=slot, key=f"es_{uid}",
+        ns = st.text_input("Slot / time", value=slot, key=f"nes_{uid}",
                            label_visibility="collapsed",
                            placeholder="Slot / time label (e.g. Breakfast · 8:30 AM)")
-        nd = st.text_area("Description", value=plan_desc, key=f"ed_{uid}",
+        nd = st.text_area("Description", value=plan_desc, key=f"ned_{uid}",
                           label_visibility="collapsed",
                           placeholder="Meal description", height=72)
         e1, e2, e3 = st.columns(3)

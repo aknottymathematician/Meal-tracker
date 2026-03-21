@@ -9,6 +9,8 @@ from datetime import datetime, date, timezone, timedelta
 import requests, time, jwt, calendar as cal_lib
 from pathlib import Path
 import threading
+import pandas as pd
+import altair as alt
 
 IST   = timezone(timedelta(hours=5, minutes=30))
 TODAY = datetime.now(IST).date()
@@ -965,7 +967,6 @@ def page_measurements():
             if wt_rows:
                 st.markdown(section_label("Weight history"), unsafe_allow_html=True)
                 if len(wt_rows) >= 2:
-                    import altair as alt, pandas as pd
                     df = pd.DataFrame(wt_rows, columns=["Date", "Weight (kg)"])
                     df["Date"] = pd.to_datetime(df["Date"])
                     chart = (
@@ -1051,7 +1052,6 @@ def page_measurements():
             if hw_rows:
                 st.markdown(section_label("Hip & Waist history"), unsafe_allow_html=True)
                 if len(hw_rows) >= 2:
-                    import altair as alt, pandas as pd
                     df2 = pd.DataFrame([
                         {"Date": pd.to_datetime(r[0]), "cm": r[1], "Measurement": "Hip"}
                         for r in hw_rows if r[1]

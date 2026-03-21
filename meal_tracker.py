@@ -455,7 +455,17 @@ def meal_card_crud(
         f'</div></div>', unsafe_allow_html=True)
 
     if image_url:
-        st.image(image_url, use_container_width=True)
+        # Thumbnail row with expand toggle
+        img_open_key = f"img_open_{uid}"
+        thumb_col, expand_col = st.columns([4, 1])
+        with thumb_col:
+            st.image(image_url, width=90)
+        with expand_col:
+            expand_label = "🔍 Close" if st.session_state.get(img_open_key) else "🔍 View"
+            if st.button(expand_label, key=f"imgbtn_{uid}", use_container_width=True):
+                st.session_state[img_open_key] = not st.session_state.get(img_open_key, False)
+        if st.session_state.get(img_open_key):
+            st.image(image_url, use_container_width=True)
 
     if comment and not is_noting:
         st.markdown(f'<div class="nt-note">💬 {comment}</div>', unsafe_allow_html=True)
@@ -540,10 +550,21 @@ def meal_card_crud(
                 entry["comment"] = nc
                 if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
                 if up:
-                    with st.spinner("Uploading…"):
+                    with st.spinner("Uploading photo…"):
                         url = upload_photo(up.read(), up.name)
-                    if url: entry["image_url"] = url
-                update_entry(d.isoformat(), tk(d, person, idx), entry)
+                    if url:
+                        entry["image_url"] = url
+                    else:
+                        st.error("Upload failed — please try again.")
+                        st.stop()
+                # Write to session state first, Firestore second
+                doc_id = tk(d, person, idx)
+                sk = f"_de_{d.isoformat()}"
+                if sk not in st.session_state:
+                    st.session_state[sk] = {}
+                st.session_state[sk][doc_id] = dict(entry)  # snapshot before rerun
+                fs_set("tracking", doc_id, entry)
+                load_all_tracking.clear()
                 st.session_state["active_note"] = None
                 st.rerun()
         with cr:
@@ -614,7 +635,17 @@ def render_snacks(d: date, person: str):
             f'<div class="nt-snack"><div class="nt-snack-label">Snack{time_part}</div>'
             f'<div class="nt-snack-desc">{s.get("desc","")}</div></div>',
             unsafe_allow_html=True)
-        if s.get("image_url"): st.image(s["image_url"], use_container_width=True)
+        if s.get("image_url"):
+            simg_key = f"simg_open_{s['id']}"
+            sc1, sc2 = st.columns([4, 1])
+            with sc1:
+                st.image(s["image_url"], width=90)
+            with sc2:
+                slbl = "🔍 Close" if st.session_state.get(simg_key) else "🔍 View"
+                if st.button(slbl, key=f"sib_{s['id']}", use_container_width=True):
+                    st.session_state[simg_key] = not st.session_state.get(simg_key, False)
+            if st.session_state.get(simg_key):
+                st.image(s["image_url"], use_container_width=True)
         if st.button("Remove", key=f"del_{s['id']}"):
             fs_del("snacks", s["id"]); st.rerun()
 

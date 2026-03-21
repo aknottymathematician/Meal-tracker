@@ -887,6 +887,29 @@ div[data-testid="column"]:last-child  { padding-right: 0 !important; }
   text-align: center !important;
 }
 
+
+/* ── Compact icon action buttons (row 2) ────────────────── */
+/* Make icon-only buttons shorter than text buttons */
+div[data-testid="column"]:has(button[title]) .stButton > button {
+  padding: 5px 4px !important;
+  font-size: 16px !important;
+  min-height: 36px !important;
+  line-height: 1 !important;
+}
+
+/* Status buttons (row 1) — slightly taller, clear text */
+.nt-meal + div .stButton > button,
+.nt-meal ~ div .stButton > button {
+  font-size: 13px !important;
+}
+
+/* Tooltip (help=) shows on hover natively in Streamlit — no extra CSS needed */
+
+/* Reduce vertical gap between the two button rows */
+div[data-testid="stVerticalBlock"] > div[data-testid="stHorizontalBlock"] {
+  margin-bottom: 2px !important;
+}
+
 /* ── Mobile ───────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .block-container { padding: 1rem 0.75rem 4rem !important; }

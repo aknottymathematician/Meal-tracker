@@ -404,6 +404,13 @@ def day_pct(d: date, all_t: dict) -> float:
 
 def check_password() -> bool:
     if st.session_state.get("auth"): return True
+    # Validate secrets exist
+    try:
+        _ = st.secrets["app_password"]
+        _ = st.secrets["firebase_credentials"]["project_id"]
+    except Exception as e:
+        st.error(f"Missing secret: {e}. Check Streamlit Cloud → Settings → Secrets.")
+        st.stop()
     st.markdown(
         '<div class="nt-login">'
         '<div class="nt-login-mark">🌿</div>'
@@ -1049,3 +1056,168 @@ def page_measurements():
 
             if not wt_rows and not hw_rows:
                 st.info("No measurements logged yet. Start logging to see your progress trends here.")
+
+# ── Page: Edit plan ────────────────────────────────────────
+
+def page_edit_plan():
+    st.markdown(section_label("Edit meal plan", mt=False), unsafe_allow_html=True)
+    st.caption(
+        "Changes made here or in the Tracker tab persist for all future occurrences. "
+        "Use Reset to restore any day back to the original plan."
+    )
+    day  = st.selectbox("Day", DAYS, label_visibility="collapsed")
+    t1, t2 = st.tabs(["\U0001f464  Person 1", "\U0001f3c3  Person 2"])
+
+    for tab, person in [(t1, "p1"), (t2, "p2")]:
+        with tab:
+            st.markdown(person_header(person), unsafe_allow_html=True)
+            meals   = load_day_plan(day, person)
+            default = [{"slot": m["slot"], "desc": m["desc"]} for m in DEFAULT_MEALS[day][person]]
+            is_custom = meals != default
+
+            if is_custom:
+                st.info(f"This day has {len(meals)} meals (default has {len(default)}).")
+                if st.button("Reset to default plan", key=f"rst_{day}_{person}",
+                             use_container_width=True):
+                    reset_day_plan(day, person)
+                    st.success("Reset to default plan."); st.rerun()
+
+            for i, meal in enumerate(meals):
+                pk = f"ep_{day}_{person}_{i}"
+                is_changed = i >= len(default) or meal != default[i]
+                title = meal["slot"] + ("  \u270f\ufe0f" if is_changed else "")
+                with st.expander(title, expanded=False):
+                    dsk = f"dslot_{pk}"
+                    ddk = f"ddesc_{pk}"
+                    if dsk not in st.session_state:
+                        st.session_state[dsk] = meal["slot"]
+                    if ddk not in st.session_state:
+                        st.session_state[ddk] = meal["desc"]
+                    def _ss(): st.session_state[dsk] = st.session_state[f"es_{pk}"]
+                    def _sd(): st.session_state[ddk] = st.session_state[f"ed_{pk}"]
+                    st.text_input("Slot / time",
+                                  value=st.session_state[dsk],
+                                  key=f"es_{pk}",
+                                  label_visibility="collapsed",
+                                  placeholder="e.g. Breakfast 8:30 AM",
+                                  on_change=_ss)
+                    st.text_area("Description",
+                                 value=st.session_state[ddk],
+                                 key=f"ed_{pk}",
+                                 height=80,
+                                 label_visibility="collapsed",
+                                 on_change=_sd)
+                    cc1, cc2, cc3 = st.columns(3)
+                    with cc1:
+                        if st.button("Save", key=f"sv_{pk}", use_container_width=True):
+                            new_slot = st.session_state.get(dsk, meal["slot"]).strip() or meal["slot"]
+                            new_desc = st.session_state.get(ddk, meal["desc"]).strip() or meal["desc"]
+                            meals[i] = {"slot": new_slot, "desc": new_desc}
+                            save_day_plan(day, person, meals)
+                            for k in [dsk, ddk, f"es_{pk}", f"ed_{pk}"]:
+                                st.session_state.pop(k, None)
+                            st.success("Saved."); st.rerun()
+                    with cc2:
+                        if st.button("Move up", key=f"mup_{pk}", use_container_width=True):
+                            if i > 0:
+                                meals[i], meals[i-1] = meals[i-1], meals[i]
+                                save_day_plan(day, person, meals)
+                                st.rerun()
+                    with cc3:
+                        if st.button("Delete", key=f"del_{pk}", use_container_width=True):
+                            meals.pop(i)
+                            save_day_plan(day, person, meals)
+                            st.success("Meal removed."); st.rerun()
+
+            st.markdown("<div style='margin-top:8px'></div>", unsafe_allow_html=True)
+            nak = f"nadd_{day}_{person}"
+            if st.button("+ Add a meal to this day", key=f"nabt_{day}_{person}",
+                         use_container_width=True):
+                st.session_state[nak] = not st.session_state.get(nak, False)
+            if st.session_state.get(nak, False):
+                nns = st.text_input("Slot / time", key=f"nams_{nak}",
+                                    label_visibility="collapsed",
+                                    placeholder="e.g. Post-workout 9 AM")
+                nnd = st.text_area("Description", key=f"namd_{nak}",
+                                   label_visibility="collapsed",
+                                   placeholder="Meal description", height=72)
+                na1, na2 = st.columns(2)
+                with na1:
+                    if st.button("Add", key=f"namc_{nak}", use_container_width=True):
+                        if nns.strip() and nnd.strip():
+                            meals.append({"slot": nns.strip(), "desc": nnd.strip()})
+                            save_day_plan(day, person, meals)
+                            st.session_state[nak] = False
+                            st.rerun()
+                        else:
+                            st.warning("Both slot and description are required.")
+                with na2:
+                    if st.button("Cancel", key=f"nax_{nak}", use_container_width=True):
+                        st.session_state[nak] = False; st.rerun()
+
+
+# ── Main ───────────────────────────────────────────────────
+
+def main():
+    if not check_password(): return
+
+    today_str = TODAY.strftime("%a, %d %b %Y")
+    st.markdown(
+        f'<div class="nt-header">'
+        f'<div class="nt-brand"><div class="nt-logo">\U0001f33f</div>'
+        f'<div><div class="nt-brand-name">NutriTrack</div>'
+        f'<div class="nt-brand-sub">6-month nutrition programme</div></div></div>'
+        f'<div class="nt-header-meta">'
+        f'<div class="nt-header-date">{today_str}</div>'
+        f'<div class="nt-header-plan">Personalised plan</div>'
+        f'</div></div>', unsafe_allow_html=True)
+
+    page = st.radio("", ["\U0001f4c5  Tracker", "\U0001f4cf  Measurements", "\u270f\ufe0f  Edit plan"],
+                    horizontal=True, label_visibility="collapsed")
+
+    if   "Tracker"      in page: page_tracker()
+    elif "Measurements" in page: page_measurements()
+    else:                        page_edit_plan()
+
+    with st.expander("Settings"):
+        st.caption("NutriTrack v7.0")
+        sa1, sa2 = st.columns(2)
+        with sa1:
+            if st.button("Reset ALL days - Person 1", key="rsta_p1", use_container_width=True):
+                with st.spinner("Resetting..."):
+                    reset_all_plans("p1")
+                st.success("Person 1 reset to default for all days."); st.rerun()
+        with sa2:
+            if st.button("Reset ALL days - Person 2", key="rsta_p2", use_container_width=True):
+                with st.spinner("Resetting..."):
+                    reset_all_plans("p2")
+                st.success("Person 2 reset to default for all days."); st.rerun()
+        st.caption("Or reset a single day:")
+        reset_day_sel = st.selectbox("Day", ["- select -"] + DAYS,
+                                     key="reset_day_sel", label_visibility="collapsed")
+        sd1, sd2 = st.columns(2)
+        with sd1:
+            if st.button("Reset P1 this day", key="rst_p1_settings", use_container_width=True):
+                if reset_day_sel != "- select -":
+                    reset_day_plan(reset_day_sel, "p1")
+                    st.success(f"P1 {reset_day_sel} reset."); st.rerun()
+                else:
+                    st.warning("Select a day first.")
+        with sd2:
+            if st.button("Reset P2 this day", key="rst_p2_settings", use_container_width=True):
+                if reset_day_sel != "- select -":
+                    reset_day_plan(reset_day_sel, "p2")
+                    st.success(f"P2 {reset_day_sel} reset."); st.rerun()
+                else:
+                    st.warning("Select a day first.")
+        st.divider()
+        if st.button("Sign out", type="secondary"):
+            st.session_state["auth"] = False; st.rerun()
+
+
+try:
+    main()
+except Exception as e:
+    import traceback
+    st.error(f"App error: {e}")
+    st.code(traceback.format_exc())

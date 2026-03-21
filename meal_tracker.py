@@ -930,12 +930,15 @@ def is_due(last_str, days):
 def page_measurements():
     st.markdown(section_label("Body metrics", mt=False), unsafe_allow_html=True)
     t1, t2 = st.tabs(["👤  Person 1", "🏃  Person 2"])
+
     for tab, person in [(t1, "p1"), (t2, "p2")]:
         with tab:
             docs = sorted(
                 fs_list("measurements", filters=[{"field": "person", "value": person}]),
                 key=lambda x: x.get("date", ""),
             )
+
+            # ── Weight section ──────────────────────────────
             lw      = last_date(docs, "weight")
             wdue    = is_due(lw, 7)
             wbadge  = "nt-due-now" if wdue else "nt-due-ok"
@@ -957,13 +960,71 @@ def page_measurements():
                     fs_set("measurements", f"{person}_{wd.isoformat()}", ex)
                     st.success(f"✓  {wv} kg saved for {wd}"); st.rerun()
 
+            # Weight chart + log
+            wt_rows = [(r["date"], r["weight"]) for r in docs if r.get("weight") is not None]
+            if wt_rows:
+                st.markdown(section_label("Weight history"), unsafe_allow_html=True)
+                if len(wt_rows) >= 2:
+                    import altair as alt, pandas as pd
+                    df = pd.DataFrame(wt_rows, columns=["Date", "Weight (kg)"])
+                    df["Date"] = pd.to_datetime(df["Date"])
+                    chart = (
+                        alt.Chart(df)
+                        .mark_line(
+                            color="#0D9488", strokeWidth=2.5, point=alt.OverlayMarkDef(
+                                color="#0D9488", size=60, filled=True)
+                        )
+                        .encode(
+                            x=alt.X("Date:T", title="Date",
+                                    axis=alt.Axis(format="%d %b", labelAngle=-30)),
+                            y=alt.Y("Weight (kg):Q",
+                                    scale=alt.Scale(zero=False),
+                                    title="kg"),
+                            tooltip=[
+                                alt.Tooltip("Date:T", format="%d %b %Y"),
+                                alt.Tooltip("Weight (kg):Q", format=".1f"),
+                            ]
+                        )
+                        .properties(height=220)
+                        .configure_view(strokeWidth=0)
+                        .configure_axis(
+                            grid=True, gridColor="#E2F4F1", gridOpacity=0.8,
+                            labelColor="#6AADA4", titleColor="#254845",
+                            domainColor="#9ACEC7"
+                        )
+                    )
+                    st.altair_chart(chart, use_container_width=True)
+                else:
+                    st.caption("Log at least 2 entries to see the trend chart.")
+
+                # Log table
+                with st.expander(f"All weight entries ({len(wt_rows)})", expanded=False):
+                    # Latest first
+                    for dt, val in reversed(wt_rows):
+                        delta_str = ""
+                        # Calculate delta vs previous
+                        ri = next((i for i, r in enumerate(wt_rows) if r[0] == dt), None)
+                        if ri is not None and ri > 0:
+                            prev = wt_rows[ri - 1][1]
+                            delta = val - prev
+                            arrow = "▲" if delta > 0 else "▼" if delta < 0 else "—"
+                            color = "#E24B4A" if delta > 0 else "#0D9488" if delta < 0 else "#9ACEC7"
+                            delta_str = f'<span style="color:{color};font-size:11px;margin-left:6px">{arrow} {abs(delta):.1f} kg</span>'
+                        st.markdown(
+                            f'<div style="display:flex;justify-content:space-between;'
+                            f'align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">'
+                            f'<span style="font-size:13px;color:var(--n600)">{dt}</span>'
+                            f'<span style="font-size:14px;font-weight:600;color:var(--ocean-800)">{val:.1f} kg{delta_str}</span>'
+                            f'</div>', unsafe_allow_html=True)
+
+            # ── Hip & Waist section ─────────────────────────
             lh      = last_date(docs, "hip")
             hdue    = is_due(lh, 14)
             hbadge  = "nt-due-now" if hdue else "nt-due-ok"
             hstatus = "Log now" if hdue else "Up to date"
             hlast   = f'<div class="nt-meas-last">Last entry: {lh}</div>' if lh else ""
             st.markdown(
-                f'<div class="nt-meas-card" style="margin-top:4px"><div class="nt-meas-header">'
+                f'<div class="nt-meas-card" style="margin-top:6px"><div class="nt-meas-header">'
                 f'<div class="nt-meas-title">Hip & Waist</div>'
                 f'<span class="nt-due-badge {hbadge}">{hstatus}</span>'
                 f'</div><div style="font-size:11px;color:var(--n400)">Log fortnightly</div>'
@@ -984,191 +1045,63 @@ def page_measurements():
                     fs_set("measurements", f"{person}_{hd.isoformat()}", ex)
                     st.success(f"✓  Hip {hv} cm · Waist {wv2} cm saved"); st.rerun()
 
-            if docs:
-                st.markdown(section_label("Progress trends"), unsafe_allow_html=True)
-                wt_rows = [(d["date"], d["weight"]) for d in docs if d.get("weight") is not None]
-                if len(wt_rows) > 1:
-                    st.caption("Weight (kg)")
-                    st.line_chart({"Weight": {r[0]: r[1] for r in wt_rows}})
-                hw_rows = [(d["date"], d.get("hip"), d.get("waist"))
-                           for d in docs if d.get("hip") is not None]
-                if len(hw_rows) > 1:
-                    st.caption("Hip & Waist (cm)")
-                    st.line_chart({"Hip":   {r[0]: r[1] for r in hw_rows if r[1]},
-                                   "Waist": {r[0]: r[2] for r in hw_rows if r[2]}})
-            else:
+            # Hip & waist chart + log
+            hw_rows = [(r["date"], r.get("hip"), r.get("waist"))
+                       for r in docs if r.get("hip") is not None]
+            if hw_rows:
+                st.markdown(section_label("Hip & Waist history"), unsafe_allow_html=True)
+                if len(hw_rows) >= 2:
+                    import altair as alt, pandas as pd
+                    df2 = pd.DataFrame([
+                        {"Date": pd.to_datetime(r[0]), "cm": r[1], "Measurement": "Hip"}
+                        for r in hw_rows if r[1]
+                    ] + [
+                        {"Date": pd.to_datetime(r[0]), "cm": r[2], "Measurement": "Waist"}
+                        for r in hw_rows if r[2]
+                    ])
+                    color_scale = alt.Scale(
+                        domain=["Hip", "Waist"],
+                        range=["#0D9488", "#38BDF8"]
+                    )
+                    chart2 = (
+                        alt.Chart(df2)
+                        .mark_line(strokeWidth=2.5, point=alt.OverlayMarkDef(size=60, filled=True))
+                        .encode(
+                            x=alt.X("Date:T", title="Date",
+                                    axis=alt.Axis(format="%d %b", labelAngle=-30)),
+                            y=alt.Y("cm:Q", scale=alt.Scale(zero=False), title="cm"),
+                            color=alt.Color("Measurement:N", scale=color_scale,
+                                            legend=alt.Legend(orient="top-left",
+                                                              labelColor="#254845",
+                                                              titleColor="#254845")),
+                            tooltip=[
+                                alt.Tooltip("Date:T", format="%d %b %Y"),
+                                alt.Tooltip("Measurement:N"),
+                                alt.Tooltip("cm:Q", format=".1f"),
+                            ]
+                        )
+                        .properties(height=220)
+                        .configure_view(strokeWidth=0)
+                        .configure_axis(
+                            grid=True, gridColor="#E2F4F1", gridOpacity=0.8,
+                            labelColor="#6AADA4", titleColor="#254845",
+                            domainColor="#9ACEC7"
+                        )
+                    )
+                    st.altair_chart(chart2, use_container_width=True)
+                else:
+                    st.caption("Log at least 2 entries to see the trend chart.")
+
+                # Log table
+                with st.expander(f"All hip & waist entries ({len(hw_rows)})", expanded=False):
+                    for dt, hip, waist in reversed(hw_rows):
+                        st.markdown(
+                            f'<div style="display:flex;justify-content:space-between;'
+                            f'align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">'
+                            f'<span style="font-size:13px;color:var(--n600)">{dt}</span>'
+                            f'<span style="font-size:13px;font-weight:600;color:var(--ocean-800)">'
+                            f'Hip: {hip:.1f} cm&nbsp;&nbsp;·&nbsp;&nbsp;Waist: {waist:.1f} cm</span>'
+                            f'</div>', unsafe_allow_html=True)
+
+            if not wt_rows and not hw_rows:
                 st.info("No measurements logged yet. Start logging to see your progress trends here.")
-
-
-# ── Page: Edit plan (week-level overview + reset) ──────────
-
-def page_edit_plan():
-    st.markdown(section_label("Edit meal plan", mt=False), unsafe_allow_html=True)
-    st.caption(
-        "Changes made here or in the Tracker tab persist for all future occurrences. "
-        "Use Reset to restore any day back to the original plan."
-    )
-    day  = st.selectbox("Day", DAYS, label_visibility="collapsed")
-    t1, t2 = st.tabs(["👤  Person 1", "🏃  Person 2"])
-
-    for tab, person in [(t1, "p1"), (t2, "p2")]:
-        with tab:
-            st.markdown(person_header(person), unsafe_allow_html=True)
-            meals     = load_day_plan(day, person)
-            default   = [{"slot": m["slot"], "desc": m["desc"]} for m in DEFAULT_MEALS[day][person]]
-            is_custom = meals != default
-
-            if is_custom:
-                st.info(f"This day has {len(meals)} meals (default has {len(default)}).")
-                if st.button("Reset to default plan", key=f"rst_{day}_{person}",
-                             use_container_width=True):
-                    reset_day_plan(day, person)
-                    st.success("Reset to default plan."); st.rerun()
-
-            for i, meal in enumerate(meals):
-                pk = f"ep_{day}_{person}_{i}"
-                is_changed = i >= len(default) or meal != default[i]
-                title = meal["slot"] + ("  ·  ✏️" if is_changed else "")
-                with st.expander(title, expanded=False):
-                    dsk = f"dslot_{pk}"
-                    ddk = f"ddesc_{pk}"
-                    if dsk not in st.session_state:
-                        st.session_state[dsk] = meal["slot"]
-                    if ddk not in st.session_state:
-                        st.session_state[ddk] = meal["desc"]
-                    def _ss(): st.session_state[dsk] = st.session_state[f"es_{pk}"]
-                    def _sd(): st.session_state[ddk] = st.session_state[f"ed_{pk}"]
-                    st.text_input("Slot / time",
-                                  value=st.session_state[dsk],
-                                  key=f"es_{pk}",
-                                  label_visibility="collapsed",
-                                  placeholder="e.g. Breakfast · 8:30 AM",
-                                  on_change=_ss)
-                    st.text_area("Description",
-                                 value=st.session_state[ddk],
-                                 key=f"ed_{pk}",
-                                 height=80,
-                                 label_visibility="collapsed",
-                                 on_change=_sd)
-                    cc1, cc2, cc3 = st.columns(3)
-                    with cc1:
-                        if st.button("Save", key=f"sv_{pk}", use_container_width=True):
-                            new_slot = st.session_state.get(dsk, meal["slot"]).strip() or meal["slot"]
-                            new_desc = st.session_state.get(ddk, meal["desc"]).strip() or meal["desc"]
-                            meals[i] = {"slot": new_slot, "desc": new_desc}
-                            save_day_plan(day, person, meals)
-                            # Clear widget + draft state so expander re-seeds on reopen
-                            for k in [dsk, ddk, f"es_{pk}", f"ed_{pk}"]:
-                                st.session_state.pop(k, None)
-                            st.success("Saved."); st.rerun()
-                    with cc2:
-                        if st.button("▲ Move up", key=f"mup_{pk}", use_container_width=True):
-                            if i > 0:
-                                meals[i], meals[i-1] = meals[i-1], meals[i]
-                                save_day_plan(day, person, meals)
-                                st.rerun()
-                    with cc3:
-                        if st.button("🗑️ Delete", key=f"del_{pk}", use_container_width=True):
-                            meals.pop(i)
-                            save_day_plan(day, person, meals)
-                            st.success("Meal removed."); st.rerun()
-
-            # Add new meal
-            st.markdown("<div style='margin-top:8px'></div>", unsafe_allow_html=True)
-            nak = f"nadd_{day}_{person}"
-            if st.button("＋ Add a meal to this day", key=f"nabt_{day}_{person}",
-                         use_container_width=True):
-                st.session_state[nak] = not st.session_state.get(nak, False)
-            if st.session_state.get(nak, False):
-                nns = st.text_input("Slot / time", key=f"nams_{nak}",
-                                    label_visibility="collapsed",
-                                    placeholder="e.g. Post-workout · 9 AM")
-                nnd = st.text_area("Description", key=f"namd_{nak}",
-                                   label_visibility="collapsed",
-                                   placeholder="Meal description", height=72)
-                na1, na2 = st.columns(2)
-                with na1:
-                    if st.button("Add", key=f"namc_{nak}", use_container_width=True):
-                        if nns.strip() and nnd.strip():
-                            meals.append({"slot": nns.strip(), "desc": nnd.strip()})
-                            save_day_plan(day, person, meals)
-                            st.session_state[nak] = False
-                            st.rerun()
-                        else:
-                            st.warning("Both slot and description are required.")
-                with na2:
-                    if st.button("Cancel", key=f"nax_{nak}", use_container_width=True):
-                        st.session_state[nak] = False; st.rerun()
-
-
-# ── Main ───────────────────────────────────────────────────
-
-def main():
-    if not check_password(): return
-
-    today_str = TODAY.strftime("%a, %d %b %Y")
-    st.markdown(
-        f'<div class="nt-header">'
-        f'<div class="nt-brand"><div class="nt-logo">🌿</div>'
-        f'<div><div class="nt-brand-name">NutriTrack</div>'
-        f'<div class="nt-brand-sub">6-month nutrition programme</div></div></div>'
-        f'<div class="nt-header-meta">'
-        f'<div class="nt-header-date">{today_str}</div>'
-        f'<div class="nt-header-plan">Personalised plan</div>'
-        f'</div></div>', unsafe_allow_html=True)
-
-    page = st.radio("", ["📅  Tracker", "📏  Measurements", "✏️  Edit plan"],
-                    horizontal=True, label_visibility="collapsed")
-
-    if   page == "📅  Tracker":       page_tracker()
-    elif page == "📏  Measurements":  page_measurements()
-    else:                              page_edit_plan()
-
-    with st.expander("⚙️  Settings"):
-        st.caption("NutriTrack · v7.0")
-
-        st.markdown("**Reset meal plans to default**")
-        st.caption("Removes any custom edits from Firestore and restores the original plan.")
-
-        sa1, sa2 = st.columns(2)
-        with sa1:
-            if st.button("Reset ALL days — Person 1", key="rsta_p1",
-                         use_container_width=True):
-                with st.spinner("Resetting…"):
-                    reset_all_plans("p1")
-                st.success("Person 1 reset to default for all days."); st.rerun()
-        with sa2:
-            if st.button("Reset ALL days — Person 2", key="rsta_p2",
-                         use_container_width=True):
-                with st.spinner("Resetting…"):
-                    reset_all_plans("p2")
-                st.success("Person 2 reset to default for all days."); st.rerun()
-
-        st.caption("Or reset a single day:")
-        reset_day_sel = st.selectbox("Day", ["— select —"] + DAYS,
-                                     key="reset_day_sel", label_visibility="collapsed")
-        sd1, sd2 = st.columns(2)
-        with sd1:
-            if st.button("Reset P1 this day", key="rst_p1_settings",
-                         use_container_width=True):
-                if reset_day_sel != "— select —":
-                    reset_day_plan(reset_day_sel, "p1")
-                    st.success(f"P1 {reset_day_sel} reset."); st.rerun()
-                else:
-                    st.warning("Select a day first.")
-        with sd2:
-            if st.button("Reset P2 this day", key="rst_p2_settings",
-                         use_container_width=True):
-                if reset_day_sel != "— select —":
-                    reset_day_plan(reset_day_sel, "p2")
-                    st.success(f"P2 {reset_day_sel} reset."); st.rerun()
-                else:
-                    st.warning("Select a day first.")
-
-        st.divider()
-        if st.button("Sign out", type="secondary"):
-            st.session_state["auth"] = False; st.rerun()
-
-
-if __name__ == "__main__":
-    main()

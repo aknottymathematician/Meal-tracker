@@ -314,6 +314,15 @@ def reset_day_plan(day: str, person: str):
     st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
     fs_del("meal_plans", f"{day}_{person}")
 
+def reset_all_plans(person: str):
+    """Delete every custom plan doc for a person and bust session cache."""
+    for day in DAYS:
+        sk = f"_plan_{day}_{person}"
+        if sk in st.session_state:
+            del st.session_state[sk]
+        fs_del("meal_plans", f"{day}_{person}")
+    st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
+
 
 # ── Tracking ───────────────────────────────────────────────
 
@@ -1102,27 +1111,41 @@ def main():
     with st.expander("⚙️  Settings"):
         st.caption("NutriTrack · v7.0")
 
-        st.markdown("**Reset custom meal plans**")
-        st.caption("Deletes any edited plans from Firestore and restores defaults for selected day.")
-        reset_day_sel = st.selectbox("Day to reset", ["— select —"] + DAYS,
+        st.markdown("**Reset meal plans to default**")
+        st.caption("Removes any custom edits from Firestore and restores the original plan.")
+
+        sa1, sa2 = st.columns(2)
+        with sa1:
+            if st.button("Reset ALL days — Person 1", key="rsta_p1",
+                         use_container_width=True):
+                with st.spinner("Resetting…"):
+                    reset_all_plans("p1")
+                st.success("Person 1 reset to default for all days."); st.rerun()
+        with sa2:
+            if st.button("Reset ALL days — Person 2", key="rsta_p2",
+                         use_container_width=True):
+                with st.spinner("Resetting…"):
+                    reset_all_plans("p2")
+                st.success("Person 2 reset to default for all days."); st.rerun()
+
+        st.caption("Or reset a single day:")
+        reset_day_sel = st.selectbox("Day", ["— select —"] + DAYS,
                                      key="reset_day_sel", label_visibility="collapsed")
-        reset_col1, reset_col2 = st.columns(2)
-        with reset_col1:
-            if st.button("Reset Person 1", key="rst_p1_settings",
+        sd1, sd2 = st.columns(2)
+        with sd1:
+            if st.button("Reset P1 this day", key="rst_p1_settings",
                          use_container_width=True):
                 if reset_day_sel != "— select —":
                     reset_day_plan(reset_day_sel, "p1")
-                    st.success(f"Person 1 {reset_day_sel} reset to default.")
-                    st.rerun()
+                    st.success(f"P1 {reset_day_sel} reset."); st.rerun()
                 else:
                     st.warning("Select a day first.")
-        with reset_col2:
-            if st.button("Reset Person 2", key="rst_p2_settings",
+        with sd2:
+            if st.button("Reset P2 this day", key="rst_p2_settings",
                          use_container_width=True):
                 if reset_day_sel != "— select —":
                     reset_day_plan(reset_day_sel, "p2")
-                    st.success(f"Person 2 {reset_day_sel} reset to default.")
-                    st.rerun()
+                    st.success(f"P2 {reset_day_sel} reset."); st.rerun()
                 else:
                     st.warning("Select a day first.")
 

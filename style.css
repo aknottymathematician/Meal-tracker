@@ -910,6 +910,23 @@ div[data-testid="stVerticalBlock"] > div[data-testid="stHorizontalBlock"] {
   margin-bottom: 2px !important;
 }
 
+
+/* ── Measurement charts (Altair) ─────────────────────────── */
+[data-testid="stArrowVegaLiteChart"] {
+  background: rgba(255,255,255,.7) !important;
+  border: 1px solid var(--border-md) !important;
+  border-radius: var(--r-lg) !important;
+  padding: 14px 10px 6px !important;
+  backdrop-filter: blur(8px) !important;
+  box-shadow: var(--sh-sm) !important;
+  margin-bottom: 8px !important;
+}
+
+/* Vega canvas background transparent */
+[data-testid="stArrowVegaLiteChart"] canvas {
+  background: transparent !important;
+}
+
 /* ── Mobile ───────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .block-container { padding: 1rem 0.75rem 4rem !important; }

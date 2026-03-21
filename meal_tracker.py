@@ -305,8 +305,9 @@ def _write_plan_bg(day: str, person: str, meals: list):
 def save_day_plan(day: str, person: str, meals: list):
     """Update session state instantly, then write to Firestore in background."""
     sk = f"_plan_{day}_{person}"
-    st.session_state[sk] = list(meals)
-    threading.Thread(target=_write_plan_bg, args=(day, person, list(meals)),
+    frozen = [{"slot": m["slot"], "desc": m["desc"]} for m in meals]
+    st.session_state[sk] = frozen
+    threading.Thread(target=_write_plan_bg, args=(day, person, frozen),
                      daemon=True).start()
 
 def reset_day_plan(day: str, person: str):
@@ -453,8 +454,14 @@ def meal_card_crud(
     - Delete
     """
     day_name  = DAYS[d.weekday()]
-    slot      = meal["slot"]
-    plan_desc = meal["desc"]
+    # Always read live slot/desc from session-state-backed plan
+    _live_plan = load_day_plan(DAYS[d.weekday()], person)
+    if idx < len(_live_plan):
+        slot      = _live_plan[idx]["slot"]
+        plan_desc = _live_plan[idx]["desc"]
+    else:
+        slot      = meal.get("slot", "")
+        plan_desc = meal.get("desc", "")
 
     entry     = dict(day_entries.get(tk(d, person, idx),
                      {"status": "pending", "comment": "", "image_url": "", "planned_desc": ""}))
@@ -509,14 +516,14 @@ def meal_card_crud(
                 entry["status"] = "done" if status != "done" else "pending"
                 if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
                 update_entry(d.isoformat(), tk(d, person, idx), entry)
-                st.rerun()
+                st.rerun(scope="fragment")
         with c2:
             lbl = "Mark as skipped" if status != "skipped" else "↩ Undo skip"
             if st.button(lbl, key=f"skip_{uid}", use_container_width=True):
                 entry["status"] = "skipped" if status != "skipped" else "pending"
                 if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
                 update_entry(d.isoformat(), tk(d, person, idx), entry)
-                st.rerun()
+                st.rerun(scope="fragment")
         with c3:
             # Note/photo
             icon = "✏️" if (comment or image_url) else "📝"
@@ -528,7 +535,7 @@ def meal_card_crud(
                 if st.button("▲", key=f"mup_{uid}", use_container_width=True):
                     meals[idx], meals[idx-1] = meals[idx-1], meals[idx]
                     save_day_plan(day_name, person, meals)
-                    st.rerun()
+                    st.rerun(scope="fragment")
             else:
                 st.markdown("<div style='height:36px'></div>", unsafe_allow_html=True)
         with c5:
@@ -537,7 +544,7 @@ def meal_card_crud(
                 if st.button("▼", key=f"mdn_{uid}", use_container_width=True):
                     meals[idx], meals[idx+1] = meals[idx+1], meals[idx]
                     save_day_plan(day_name, person, meals)
-                    st.rerun()
+                    st.rerun(scope="fragment")
             else:
                 st.markdown("<div style='height:36px'></div>", unsafe_allow_html=True)
         with c6:
@@ -555,13 +562,13 @@ def meal_card_crud(
                 if st.button("▲", key=f"mup_f_{uid}", use_container_width=True):
                     meals[idx], meals[idx-1] = meals[idx-1], meals[idx]
                     save_day_plan(day_name, person, meals)
-                    st.rerun()
+                    st.rerun(scope="fragment")
         with c5:
             if idx < len(meals) - 1:
                 if st.button("▼", key=f"mdn_f_{uid}", use_container_width=True):
                     meals[idx], meals[idx+1] = meals[idx+1], meals[idx]
                     save_day_plan(day_name, person, meals)
-                    st.rerun()
+                    st.rerun(scope="fragment")
         with c6:
             if st.button("⚙️", key=f"edt_f_{uid}", use_container_width=True):
                 st.session_state[edit_key] = not is_editing
@@ -588,12 +595,12 @@ def meal_card_crud(
                         st.stop()
                 update_entry(d.isoformat(), tk(d, person, idx), entry)
                 st.session_state["active_note"] = None
-                st.rerun()
+                st.rerun(scope="fragment")
         with cr:
             if image_url and st.button("Remove photo", key=f"rm_{uid}", use_container_width=True):
                 entry["image_url"] = ""
                 update_entry(d.isoformat(), tk(d, person, idx), entry)
-                st.rerun()
+                st.rerun(scope="fragment")
 
     # ── Inline edit panel ──────────────────────────────────
     if is_editing:
@@ -612,11 +619,11 @@ def meal_card_crud(
                     meals[idx] = {"slot": ns.strip() or slot, "desc": nd.strip() or plan_desc}
                     save_day_plan(day_name, person, meals)
                     st.session_state[edit_key] = False
-                    st.rerun()
+                    st.rerun(scope="fragment")
         with e2:
             if st.button("Cancel", key=f"ecn_{uid}", use_container_width=True):
                 st.session_state[edit_key] = False
-                st.rerun()
+                st.rerun(scope="fragment")
         with e3:
             if st.button("🗑️ Delete", key=f"edel_{uid}", use_container_width=True):
                 st.session_state[del_key] = not is_deleting
@@ -632,11 +639,11 @@ def meal_card_crud(
                 save_day_plan(day_name, person, meals)
                 st.session_state.pop(del_key, None)
                 st.session_state.pop(edit_key, None)
-                st.rerun()
+                st.rerun(scope="fragment")
         with dc2:
             if st.button("Cancel", key=f"dno_{uid}", use_container_width=True):
                 st.session_state[del_key] = False
-                st.rerun()
+                st.rerun(scope="fragment")
 
     st.markdown("<div style='margin-bottom:4px'></div>", unsafe_allow_html=True)
 
@@ -671,7 +678,7 @@ def render_snacks(d: date, person: str):
         if st.button("Remove", key=f"del_{s['id']}"):
             threading.Thread(target=fs_del, args=("snacks", s["id"]),
                              daemon=True).start()
-            st.rerun()
+            st.rerun(scope="fragment")
 
     if d <= TODAY:
         ak = f"add_{d.isoformat()}_{person}"
@@ -694,7 +701,7 @@ def render_snacks(d: date, person: str):
                         "desc": desc.strip(),  "image_url": img_url,
                         "timestamp": datetime.now(IST).isoformat(),
                     })
-                    st.session_state[ak] = False; st.rerun()
+                    st.session_state[ak] = False; st.rerun(scope="fragment")
                 else:
                     st.warning("Please describe what you had.")
 
@@ -726,30 +733,27 @@ def add_meal_form(d: date, person: str, meals: list):
                     meals.append({"slot": ns.strip(), "desc": nd.strip()})
                     save_day_plan(day_name, person, meals)
                     st.session_state[ak] = False
-                    st.rerun()
+                    st.rerun(scope="fragment")
                 else:
                     st.warning("Both slot and description are required.")
         with a2:
             if st.button("Cancel", key=f"amx_{ak}", use_container_width=True):
-                st.session_state[ak] = False; st.rerun()
+                st.session_state[ak] = False; st.rerun(scope="fragment")
         st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ── Per-person meal list — fragment so note/edit reruns stay isolated ─────
 
 @st.fragment
-def render_person_meals(
-    d: date, person: str, meals: list,
-    day_ent: dict, is_future: bool
-):
+def render_person_meals(d: date, person: str, is_future: bool):
     """
-    Runs as a fragment — button clicks inside only rerun this block,
-    not the whole page. Eliminates the slow full-page rerun on note toggle.
+    Fragment — partial reruns only.
+    Always reads live plan + entries from session state.
+    All st.rerun() inside use scope="fragment" to stay within this fragment.
     """
-    # Re-read meals inside fragment so reorder changes are reflected
     day_name = DAYS[d.weekday()]
-    meals    = load_day_plan(day_name, person)   # fast: session-state backed
-    day_ent  = load_day_entries(d.isoformat())   # fast: session-state backed
+    meals    = load_day_plan(day_name, person)
+    day_ent  = load_day_entries(d.isoformat())
 
     st.markdown(person_header(person), unsafe_allow_html=True)
     for i, meal in enumerate(meals):
@@ -834,10 +838,10 @@ def page_tracker():
     t1, t2 = st.tabs(["👤  Person 1 · Veg", "🏃  Person 2 · Runner"])
 
     with t1:
-        render_person_meals(d, "p1", p1_meals, day_ent, is_future)
+        render_person_meals(d, "p1", is_future)
 
     with t2:
-        render_person_meals(d, "p2", p2_meals, day_ent, is_future)
+        render_person_meals(d, "p2", is_future)
 
 
 # ── Page: Measurements ─────────────────────────────────────

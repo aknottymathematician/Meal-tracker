@@ -295,20 +295,16 @@ def load_day_plan(day: str, person: str) -> list:
             st.session_state[sk] = _default_plan(day, person)
     return st.session_state[sk]
 
-def _write_plan_bg(day: str, person: str, meals: list):
-    """Background thread: write to Firestore without blocking UI."""
-    try:
-        fs_set("meal_plans", f"{day}_{person}", {"meals": meals})
-    except Exception:
-        pass  # Silent — session state already has the correct value
-
 def save_day_plan(day: str, person: str, meals: list):
-    """Update session state instantly, then write to Firestore in background."""
+    """
+    Update session state instantly AND write to Firestore synchronously.
+    Plan edits are infrequent so the ~300ms wait is acceptable.
+    (Background threads cannot access st.secrets, so async writes silently fail.)
+    """
     sk = f"_plan_{day}_{person}"
     frozen = [{"slot": m["slot"], "desc": m["desc"]} for m in meals]
     st.session_state[sk] = frozen
-    threading.Thread(target=_write_plan_bg, args=(day, person, frozen),
-                     daemon=True).start()
+    fs_set("meal_plans", f"{day}_{person}", {"meals": frozen})
 
 def reset_day_plan(day: str, person: str):
     sk = f"_plan_{day}_{person}"
@@ -337,22 +333,33 @@ def load_day_entries(date_str: str) -> dict:
         }
     return st.session_state[sk]
 
-def _write_entry_bg(doc_id: str, entry: dict):
-    """Background thread: write tracking entry to Firestore."""
+def _write_entry_bg(doc_id: str, entry: dict, token: str, pid: str):
+    """Background thread — all credentials pre-fetched on main thread."""
     try:
-        fs_set("tracking", doc_id, entry)
+        url  = (f"https://firestore.googleapis.com/v1/projects/{pid}"
+                f"/databases/(default)/documents/tracking/{doc_id}")
+        hdrs = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        requests.patch(url, headers=hdrs,
+                       json={"fields": {k: _to(v) for k, v in entry.items()}},
+                       timeout=10)
     except Exception:
         pass
 
 def update_entry(date_str: str, doc_id: str, entry: dict):
-    """Update session state instantly, fire Firestore write in background."""
+    """Update session state instantly, fire Firestore write in background.
+    All st.secrets access happens on the main thread before thread spawn."""
     sk = f"_de_{date_str}"
     if sk not in st.session_state:
         st.session_state[sk] = {}
     st.session_state[sk][doc_id] = dict(entry)
-    # Also invalidate the all-tracking cache lazily
     load_all_tracking.clear()
-    threading.Thread(target=_write_entry_bg, args=(doc_id, dict(entry)),
+    try:
+        token = get_token()
+        pid   = st.secrets["firebase_credentials"]["project_id"]
+    except Exception:
+        return  # If we can't get creds, skip background write (already in session state)
+    threading.Thread(target=_write_entry_bg,
+                     args=(doc_id, dict(entry), token, pid),
                      daemon=True).start()
 
 def bust_tracking(date_str: str):

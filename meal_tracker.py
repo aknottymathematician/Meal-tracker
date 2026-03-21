@@ -298,13 +298,21 @@ def load_day_plan(day: str, person: str) -> list:
 def save_day_plan(day: str, person: str, meals: list):
     """
     Update session state instantly AND write to Firestore synchronously.
-    Also bumps plan_version so fragments always re-execute after a plan change.
+    Also clears planned_desc in today's tracking entries so disp_desc refreshes.
     """
     sk = f"_plan_{day}_{person}"
     frozen = [{"slot": m["slot"], "desc": m["desc"]} for m in meals]
     st.session_state[sk] = frozen
-    # Bump version counter — fragments use this as an argument to force re-execution
     st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
+    # If editing today's plan, clear planned_desc snapshots in session-state
+    # tracking entries so the corrected description shows immediately.
+    today_day = DAYS[TODAY.weekday()]
+    if day == today_day:
+        te_sk = f"_de_{TODAY.isoformat()}"
+        if te_sk in st.session_state:
+            for key, entry in st.session_state[te_sk].items():
+                if f"_{person}_" in key and "planned_desc" in entry:
+                    entry["planned_desc"] = ""
     fs_set("meal_plans", f"{day}_{person}", {"meals": frozen})
 
 def reset_day_plan(day: str, person: str):
@@ -487,7 +495,9 @@ def meal_card_crud(
     status    = entry.get("status", "pending")
     comment   = entry.get("comment", "")
     image_url = entry.get("image_url", "")
-    disp_desc = entry.get("planned_desc") or plan_desc
+    # Use planned_desc snapshot only for past days (preserves history).
+    # For today or future always show the live plan so edits are instant.
+    disp_desc = (entry.get("planned_desc") or plan_desc) if d < TODAY else plan_desc
 
     uid       = f"{d.isoformat()}_{person}_{idx}"
     edit_key  = f"edit_{uid}"

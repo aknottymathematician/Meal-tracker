@@ -9,8 +9,6 @@ from datetime import datetime, date, timezone, timedelta
 import requests, time, jwt, calendar as cal_lib
 from pathlib import Path
 import threading
-import pandas as pd
-import altair as alt
 
 IST   = timezone(timedelta(hours=5, minutes=30))
 TODAY = datetime.now(IST).date()
@@ -967,37 +965,13 @@ def page_measurements():
             if wt_rows:
                 st.markdown(section_label("Weight history"), unsafe_allow_html=True)
                 if len(wt_rows) >= 2:
-                    df = pd.DataFrame(wt_rows, columns=["Date", "Weight (kg)"])
-                    df["Date"] = pd.to_datetime(df["Date"])
-                    chart = (
-                        alt.Chart(df)
-                        .mark_line(
-                            color="#0D9488", strokeWidth=2.5, point=alt.OverlayMarkDef(
-                                color="#0D9488", size=60, filled=True)
-                        )
-                        .encode(
-                            x=alt.X("Date:T", title="Date",
-                                    axis=alt.Axis(format="%d %b", labelAngle=-30)),
-                            y=alt.Y("Weight (kg):Q",
-                                    scale=alt.Scale(zero=False),
-                                    title="kg"),
-                            tooltip=[
-                                alt.Tooltip("Date:T", format="%d %b %Y"),
-                                alt.Tooltip("Weight (kg):Q", format=".1f"),
-                            ]
-                        )
-                        .properties(height=220)
-                        .configure_view(strokeWidth=0)
-                        .configure_axis(
-                            grid=True, gridColor="#E2F4F1", gridOpacity=0.8,
-                            labelColor="#6AADA4", titleColor="#254845",
-                            domainColor="#9ACEC7"
-                        )
+                    st.line_chart(
+                        {"Weight (kg)": {r[0]: r[1] for r in wt_rows}},
+                        height=220,
+                        color="#0D9488",
                     )
-                    st.altair_chart(chart, use_container_width=True)
                 else:
-                    st.caption("Log at least 2 entries to see the trend chart.")
-
+                    st.caption('Log at least 2 entries to see the trend chart.')
                 # Log table
                 with st.expander(f"All weight entries ({len(wt_rows)})", expanded=False):
                     # Latest first
@@ -1052,46 +1026,16 @@ def page_measurements():
             if hw_rows:
                 st.markdown(section_label("Hip & Waist history"), unsafe_allow_html=True)
                 if len(hw_rows) >= 2:
-                    df2 = pd.DataFrame([
-                        {"Date": pd.to_datetime(r[0]), "cm": r[1], "Measurement": "Hip"}
-                        for r in hw_rows if r[1]
-                    ] + [
-                        {"Date": pd.to_datetime(r[0]), "cm": r[2], "Measurement": "Waist"}
-                        for r in hw_rows if r[2]
-                    ])
-                    color_scale = alt.Scale(
-                        domain=["Hip", "Waist"],
-                        range=["#0D9488", "#38BDF8"]
+                    st.line_chart(
+                        {
+                            "Hip (cm)":   {r[0]: r[1] for r in hw_rows if r[1]},
+                            "Waist (cm)": {r[0]: r[2] for r in hw_rows if r[2]},
+                        },
+                        height=220,
+                        color=["#0D9488", "#38BDF8"],
                     )
-                    chart2 = (
-                        alt.Chart(df2)
-                        .mark_line(strokeWidth=2.5, point=alt.OverlayMarkDef(size=60, filled=True))
-                        .encode(
-                            x=alt.X("Date:T", title="Date",
-                                    axis=alt.Axis(format="%d %b", labelAngle=-30)),
-                            y=alt.Y("cm:Q", scale=alt.Scale(zero=False), title="cm"),
-                            color=alt.Color("Measurement:N", scale=color_scale,
-                                            legend=alt.Legend(orient="top-left",
-                                                              labelColor="#254845",
-                                                              titleColor="#254845")),
-                            tooltip=[
-                                alt.Tooltip("Date:T", format="%d %b %Y"),
-                                alt.Tooltip("Measurement:N"),
-                                alt.Tooltip("cm:Q", format=".1f"),
-                            ]
-                        )
-                        .properties(height=220)
-                        .configure_view(strokeWidth=0)
-                        .configure_axis(
-                            grid=True, gridColor="#E2F4F1", gridOpacity=0.8,
-                            labelColor="#6AADA4", titleColor="#254845",
-                            domainColor="#9ACEC7"
-                        )
-                    )
-                    st.altair_chart(chart2, use_container_width=True)
                 else:
-                    st.caption("Log at least 2 entries to see the trend chart.")
-
+                    st.caption('Log at least 2 entries to see the trend chart.')
                 # Log table
                 with st.expander(f"All hip & waist entries ({len(hw_rows)})", expanded=False):
                     for dt, hip, waist in reversed(hw_rows):

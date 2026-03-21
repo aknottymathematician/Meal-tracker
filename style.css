@@ -834,6 +834,33 @@ div[data-testid="column"]:last-child  { padding-right: 0 !important; }
 .nt-meal:nth-child(7) { animation-delay:210ms; }
 
 
+
+/* ── Image thumbnail ─────────────────────────────────────── */
+.nt-thumb-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 4px;
+}
+
+/* Thumbnail: small fixed size, rounded, slight border */
+.nt-thumb-wrap img,
+[data-testid="stImage"] img {
+  border-radius: var(--r-md) !important;
+  box-shadow: var(--sh-sm) !important;
+  object-fit: cover !important;
+  transition: transform 180ms ease !important;
+  cursor: pointer;
+}
+
+/* Full-view image — no size restriction, just rounded */
+.nt-img-full img {
+  border-radius: var(--r-lg) !important;
+  width: 100% !important;
+  margin-top: 8px;
+  box-shadow: var(--sh-md) !important;
+}
+
 /* ── Icon / small action buttons — centred glyph ────────── */
 .stButton > button[data-testid="baseButton-secondary"] {
   display: flex !important;

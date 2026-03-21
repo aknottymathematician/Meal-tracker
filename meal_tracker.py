@@ -417,7 +417,7 @@ def check_password() -> bool:
         '<div class="nt-login-title">NutriTrack</div>'
         '<div class="nt-login-sub">Your personalised nutrition companion</div>'
         '</div>', unsafe_allow_html=True)
-    pw = st.text_input("", type="password", placeholder="Enter password",
+    pw = st.text_input("Password", type="password", placeholder="Enter password",
                        label_visibility="collapsed")
     _, mid, _ = st.columns([1, 2, 1])
     with mid:
@@ -848,7 +848,7 @@ def page_tracker():
     for k, v in [("sel_date", TODAY), ("cal_year", TODAY.year), ("cal_month", TODAY.month)]:
         if k not in st.session_state: st.session_state[k] = v
 
-    sel = st.date_input("", value=st.session_state.sel_date,
+    sel = st.date_input("Select date", value=st.session_state.sel_date,
                         min_value=date(2025, 1, 1), max_value=date(2026, 9, 30),
                         label_visibility="collapsed")
     if sel != st.session_state.sel_date:
@@ -1172,7 +1172,7 @@ def main():
         f'<div class="nt-header-plan">Personalised plan</div>'
         f'</div></div>', unsafe_allow_html=True)
 
-    page = st.radio("", ["\U0001f4c5  Tracker", "\U0001f4cf  Measurements", "\u270f\ufe0f  Edit plan"],
+    page = st.radio("Navigation", ["\U0001f4c5  Tracker", "\U0001f4cf  Measurements", "\u270f\ufe0f  Edit plan"],
                     horizontal=True, label_visibility="collapsed")
 
     if   "Tracker"      in page: page_tracker()

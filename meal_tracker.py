@@ -1,5 +1,6 @@
 """
-NutriTrack — Personalised Nutrition Tracker
+NutriTrack v7 — Personalised Nutrition Tracker
+Full CRUD: add, edit, delete, reorder meals per day/person.
 Reads style.css from the same directory for all visual styling.
 """
 
@@ -8,7 +9,9 @@ from datetime import datetime, date, timezone, timedelta
 import requests, time, jwt, calendar as cal_lib
 from pathlib import Path
 
-IST = timezone(timedelta(hours=5, minutes=30))
+IST   = timezone(timedelta(hours=5, minutes=30))
+TODAY = datetime.now(IST).date()
+DAYS  = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 st.set_page_config(
     page_title="NutriTrack",
@@ -17,23 +20,14 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ── Load external CSS ──────────────────────────────────────
-
 def load_css():
-    css_path = Path(__file__).parent / "style.css"
-    if css_path.exists():
-        st.markdown(f"<style>{css_path.read_text()}</style>", unsafe_allow_html=True)
-    else:
-        st.warning("style.css not found — place it in the same folder as meal_tracker.py")
+    p = Path(__file__).parent / "style.css"
+    if p.exists():
+        st.markdown(f"<style>{p.read_text()}</style>", unsafe_allow_html=True)
 
 load_css()
 
-# ── Constants ──────────────────────────────────────────────
-
-TODAY = datetime.now(IST).date()
-DAYS  = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-
-# ── Meal plan data ─────────────────────────────────────────
+# ── Default meal plan ──────────────────────────────────────
 
 DEFAULT_MEALS = {
     "Mon": {
@@ -66,8 +60,8 @@ DEFAULT_MEALS = {
             {"slot": "Dinner · 7 PM",          "desc": "100 g sabzi/salad + 1 jowar bhakri + 70 g low fat tossed paneer"},
         ],
         "p2": [
-            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt) — sip throughout morning"},
-            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee (no sugar) | During training 6:30–8 AM: 300–500 ml plain water + Supply 6 salts (1 sachet in 500 ml)"},
+            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"},
+            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During training 6:30–8 AM: 300–500 ml plain water + Supply 6 salts (1 sachet in 500 ml)"},
             {"slot": "Breakfast · 8:30 AM",    "desc": "400 ml oats protein smoothie + 30 g boiled chickpeas (15 g raw)"},
             {"slot": "Mid-morning · 10 AM",    "desc": "1 vit-C rich fruit + 4 egg whites"},
             {"slot": "Lunch · 12:30 PM",       "desc": "100 g salad + 3 jowar bhakri + 100 g low fat pan fry paneer + 100 g plain curd"},
@@ -86,8 +80,8 @@ DEFAULT_MEALS = {
             {"slot": "Dinner · 7 PM",          "desc": "50 g boiled chickpeas / 150 ml dal (30 g raw) + 70 g air fried paneer & 100 g sautéed veggies OR 70 g pan sautéed paneer & 100 g veggies"},
         ],
         "p2": [
-            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt) — sip throughout morning"},
-            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee (no sugar) | During training 6–7 AM: Supply 6 salts (1 sachet in 600 ml)"},
+            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"},
+            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During training 6–7 AM: Supply 6 salts (1 sachet in 600 ml)"},
             {"slot": "Breakfast · 8:30 AM",    "desc": "2 veg sandwiches + 200 ml toned milk + 1 scoop whey protein"},
             {"slot": "Mid-morning · 10 AM",    "desc": "1 vit-C rich fruit + 4 egg whites"},
             {"slot": "Lunch · 12:30 PM",       "desc": "100 g salad + 200 g mix veg pulao (rice + quinoa) + 100 g chicken kheema + 200 ml chaas"},
@@ -106,8 +100,8 @@ DEFAULT_MEALS = {
             {"slot": "Dinner · 7 PM",          "desc": "100 g sabzi/salad + 1 whole wheat roti + 70 g tofu stir fry"},
         ],
         "p2": [
-            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt) — sip throughout morning"},
-            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee (no sugar) | During training 6:30–8 AM: 300–500 ml plain water + Supply 6 salts (1 sachet in 500 ml)"},
+            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"},
+            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During training 6:30–8 AM: 300–500 ml plain water + Supply 6 salts (1 sachet in 500 ml)"},
             {"slot": "Breakfast · 8:30 AM",    "desc": "400 ml oats protein porridge + 30 g boiled kala channa (15 g raw)"},
             {"slot": "Mid-morning · 10 AM",    "desc": "1 vit-C rich fruit + 4 egg whites"},
             {"slot": "Lunch · 12:30 PM",       "desc": "100 g salad + 3 whole wheat roti + 150 g rajma masala (50 g rajma) + 100 g skyr yogurt"},
@@ -126,8 +120,8 @@ DEFAULT_MEALS = {
             {"slot": "Dinner · 7 PM",          "desc": "100 g sabzi/salad + 1 jowar bhakri + 70 g low fat palak paneer"},
         ],
         "p2": [
-            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt) — sip throughout morning"},
-            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee (no sugar) | During training 6–7 AM: Supply 6 salts (1 sachet in 600 ml)"},
+            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"},
+            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During training 6–7 AM: Supply 6 salts (1 sachet in 600 ml)"},
             {"slot": "Breakfast · 8:30 AM",    "desc": "3 bread toast + 4 egg whites (omelette/bhurji) + 200 ml toned milk + 1 scoop whey protein"},
             {"slot": "Mid-morning · 10 AM",    "desc": "1 vit-C rich fruit + 4 egg whites"},
             {"slot": "Lunch · 12:30 PM",       "desc": "100 g salad + 3 jowar bhakri + 100 g low fat palak paneer + 100 g plain curd"},
@@ -146,8 +140,8 @@ DEFAULT_MEALS = {
             {"slot": "Dinner · 7 PM",          "desc": "200 g shirataki noodles (100 g noodles + 100 g veggies) + 200 ml tomato soup + 100 g skyr protein yogurt"},
         ],
         "p2": [
-            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt) — sip throughout morning"},
-            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee (no sugar) | During training 6:30–8 AM: 300–500 ml plain water + Supply 6 salts (1 sachet in 500 ml)"},
+            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"},
+            {"slot": "Pre-training · 5:30–6 AM","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During training 6:30–8 AM: 300–500 ml plain water + Supply 6 salts (1 sachet in 500 ml)"},
             {"slot": "Breakfast · 8:30 AM",    "desc": "400 ml oats protein smoothie + 30 g moong sprouts (15 g raw)"},
             {"slot": "Mid-morning · 10 AM",    "desc": "1 vit-C rich fruit + 4 egg whites"},
             {"slot": "Lunch · 12:30 PM",       "desc": "100 g salad + tofu burrito wrap (2 wheat roti + 100 g tofu + 20 g boiled rajma + 75 g veggies + 15 g salsa) + 200 ml chaas"},
@@ -166,8 +160,8 @@ DEFAULT_MEALS = {
             {"slot": "Dinner · 7 PM",          "desc": "⭐ Enjoyment meal"},
         ],
         "p2": [
-            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt) — sip throughout morning"},
-            {"slot": "Pre-training · 5:30–6 AM (long run)","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee (no sugar) | During run: Supply 6 salts (1 sachet in 500 ml) + energy gel with caffeine at 45 min + plain energy gel at 80 min"},
+            {"slot": "Sip — first half of day", "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"},
+            {"slot": "Pre-training · 5:30–6 AM (long run)","desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During run: Supply 6 salts (1 sachet in 500 ml) + energy gel with caffeine at 45 min + plain energy gel at 80 min"},
             {"slot": "Breakfast · 8:30 AM",    "desc": "400 ml oats protein smoothie + 30 g boiled chickpeas (15 g raw)"},
             {"slot": "Mid-morning · 10 AM",    "desc": "1 vit-C rich fruit + 4 egg whites"},
             {"slot": "Lunch · 12:30 PM",       "desc": "100 g salad + 250 g veg khichdi (100 g rice + 100 g dal + 50 g veggies) OR 250 g chicken biryani (150 g rice + 100 g chicken curry) + 100 g cucumber raita"},
@@ -242,10 +236,8 @@ def fs_get(col, did):
 
 def fs_set(col, did, data):
     requests.patch(
-        _u(f"{col}/{did}"),
-        headers=_h(),
-        json={"fields": {k: _to(v) for k, v in data.items()}},
-        timeout=10,
+        _u(f"{col}/{did}"), headers=_h(),
+        json={"fields": {k: _to(v) for k, v in data.items()}}, timeout=10,
     ).raise_for_status()
 
 def fs_del(col, did):
@@ -265,10 +257,8 @@ def fs_list(col, filters=None):
 
 def fs_add(col, data):
     r = requests.post(
-        _u(col),
-        headers=_h(),
-        json={"fields": {k: _to(v) for k, v in data.items()}},
-        timeout=10,
+        _u(col), headers=_h(),
+        json={"fields": {k: _to(v) for k, v in data.items()}}, timeout=10,
     )
     r.raise_for_status()
     return r.json()["name"].split("/")[-1]
@@ -280,106 +270,107 @@ def upload_photo(fb, fn) -> str:
     r = requests.post(
         f"https://api.cloudinary.com/v1_1/{st.secrets['cloudinary_cloud_name']}/image/upload",
         data={"upload_preset": st.secrets["cloudinary_upload_preset"]},
-        files={"file": (fn, fb)},
-        timeout=30,
+        files={"file": (fn, fb)}, timeout=30,
     )
     return r.json().get("secure_url", "") if r.status_code == 200 else ""
 
 
-# ── Plan helpers ───────────────────────────────────────────
+# ── Meal plan — dynamic, stored in Firestore ───────────────
 
-@st.cache_data(ttl=300)
-def load_custom_plan():
-    return {d["id"]: d for d in fs_list("meal_plan")}
+@st.cache_data(ttl=60)
+def load_day_plan(day: str, person: str) -> list:
+    """Load meal list for a day/person. Falls back to DEFAULT_MEALS."""
+    doc = fs_get("meal_plans", f"{day}_{person}")
+    if doc and doc.get("meals"):
+        meals = doc["meals"]
+        # Ensure each item is a proper dict with slot + desc
+        return [{"slot": m.get("slot", ""), "desc": m.get("desc", "")} for m in meals]
+    return [{"slot": m["slot"], "desc": m["desc"]} for m in DEFAULT_MEALS[day][person]]
 
-def current_desc(day, person, idx, custom):
-    entry = custom.get(f"{day}_{person}_{idx}", {})
-    if isinstance(entry, dict):
-        return entry.get("desc") or DEFAULT_MEALS[day][person][idx]["desc"]
-    return entry or DEFAULT_MEALS[day][person][idx]["desc"]
+def save_day_plan(day: str, person: str, meals: list):
+    fs_set("meal_plans", f"{day}_{person}", {"meals": meals})
+    load_day_plan.clear()
 
-def slot_label(day, person, idx, custom=None):
-    if custom is not None:
-        entry = custom.get(f"{day}_{person}_{idx}", {})
-        if isinstance(entry, dict) and entry.get("slot"):
-            return entry["slot"]
-    return DEFAULT_MEALS[day][person][idx]["slot"]
-
-def meal_count(day, person):
-    return len(DEFAULT_MEALS[day][person])
+def reset_day_plan(day: str, person: str):
+    fs_del("meal_plans", f"{day}_{person}")
+    load_day_plan.clear()
 
 
-# ── Tracking helpers ───────────────────────────────────────
+# ── Tracking ───────────────────────────────────────────────
 
 def tk(d: date, person, idx):
     return f"{d.isoformat()}_{person}_{idx}"
 
 @st.cache_data(ttl=20)
-def load_day(date_str: str) -> dict:
-    return {
-        doc["id"]: doc
-        for doc in fs_list("tracking")
-        if doc["id"].startswith(date_str + "_")
-    }
+def load_day_entries(date_str: str) -> dict:
+    return {doc["id"]: doc for doc in fs_list("tracking") if doc["id"].startswith(date_str + "_")}
 
 @st.cache_data(ttl=30)
 def load_all_tracking() -> dict:
     return {doc["id"]: doc for doc in fs_list("tracking")}
 
-def bust(date_str: str):
-    load_day.clear()
+def bust_tracking(date_str: str):
+    load_day_entries.clear()
     load_all_tracking.clear()
 
 def day_pct(d: date, all_t: dict) -> float:
     day_name = DAYS[d.weekday()]
-    tot = done = 0
-    for p in ["p1", "p2"]:
-        for i in range(meal_count(day_name, p)):
-            tot += 1
-            if all_t.get(tk(d, p, i), {}).get("status", "pending") in ("done", "skipped"):
-                done += 1
-    return done / tot if tot else 0
+    meals    = load_day_plan(day_name, "p1") + load_day_plan(day_name, "p2")
+    total    = len(meals)
+    done     = sum(
+        1 for p in ["p1", "p2"]
+        for i in range(len(load_day_plan(day_name, p)))
+        if all_t.get(tk(d, p, i), {}).get("status", "pending") in ("done", "skipped")
+    )
+    return done / total if total else 0
 
 
-# ── HTML component helpers ─────────────────────────────────
+# ── Auth ───────────────────────────────────────────────────
+
+def check_password() -> bool:
+    if st.session_state.get("auth"): return True
+    st.markdown(
+        '<div class="nt-login">'
+        '<div class="nt-login-mark">🌿</div>'
+        '<div class="nt-login-title">NutriTrack</div>'
+        '<div class="nt-login-sub">Your personalised nutrition companion</div>'
+        '</div>', unsafe_allow_html=True)
+    pw = st.text_input("", type="password", placeholder="Enter password",
+                       label_visibility="collapsed")
+    _, mid, _ = st.columns([1, 2, 1])
+    with mid:
+        if st.button("Sign in", use_container_width=True, type="primary"):
+            if pw == st.secrets["app_password"]:
+                st.session_state["auth"] = True; st.rerun()
+            else:
+                st.error("Incorrect password.")
+    return False
+
+
+# ── HTML helpers ───────────────────────────────────────────
 
 def badge_html(status: str) -> str:
     labels = {"done": "Done", "skipped": "Skipped", "pending": "Pending"}
     return f'<span class="nt-badge {status}">{labels.get(status, "Pending")}</span>'
 
-
 def person_header(person: str) -> str:
     if person == "p1":
-        return (
-            '<div class="nt-person p1">'
-            '<div class="nt-person-avatar">P1</div>'
-            '<div>'
-            '<div class="nt-person-name">Madhura</div>'
-            '<div class="nt-person-role">Vegetarian</div>'
-            '</div></div>'
-        )
-    return (
-        '<div class="nt-person p2">'
-        '<div class="nt-person-avatar">P2</div>'
-        '<div>'
-        '<div class="nt-person-name">Jasraj</div>'
-        '<div class="nt-person-role">Non-Vegetarian</div>'
-        '</div></div>'
-    )
+        return ('<div class="nt-person p1"><div class="nt-person-avatar">P1</div>'
+                '<div><div class="nt-person-name">Person 1</div>'
+                '<div class="nt-person-role">Vegetarian</div></div></div>')
+    return ('<div class="nt-person p2"><div class="nt-person-avatar">P2</div>'
+            '<div><div class="nt-person-name">Person 2</div>'
+            '<div class="nt-person-role">Non-veg · Runner</div></div></div>')
 
+def section_label(text: str, mt: bool = True) -> str:
+    s = "margin-top:0" if not mt else ""
+    return f'<div class="nt-section-label" style="{s}">{text}</div>'
 
-def section_label(text: str, margin_top: bool = True) -> str:
-    mt = "margin-top:0" if not margin_top else ""
-    return f'<div class="nt-section-label" style="{mt}">{text}</div>'
-
-
-def calendar_html(y: int, m: int, all_t: dict, sel: date) -> str:
+def calendar_html(y, m, all_t, sel) -> str:
     fdow  = cal_lib.monthrange(y, m)[0]
     ndays = cal_lib.monthrange(y, m)[1]
-    hdr   = "".join(
-        f'<div class="nt-cal-hdr">{d}</div>'
-        for d in ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
-    )
+    hdr   = "".join(f'<div class="nt-cal-hdr">{d}</div>'
+                    for d in ["Mo","Tu","We","Th","Fr","Sa","Su"])
     cells = '<div class="nt-cal-empty"></div>' * fdow
     for n in range(1, ndays + 1):
         d   = date(y, m, n)
@@ -390,146 +381,203 @@ def calendar_html(y: int, m: int, all_t: dict, sel: date) -> str:
             p   = day_pct(d, all_t)
             css = "nt-cal-none" if p == 0 else "nt-cal-part" if p < 0.8 else "nt-cal-full"
         cells += f'<div class="nt-cal-day {css}{ex}">{n}</div>'
-
-    legend = """
-    <div class="nt-cal-legend">
-      <div class="nt-cal-leg">
-        <div class="nt-cal-dot" style="background:var(--brand-200);border:1px solid var(--brand-400)"></div>Fully tracked
-      </div>
-      <div class="nt-cal-leg">
-        <div class="nt-cal-dot" style="background:var(--gold-200);border:1px solid var(--gold-400)"></div>Partial
-      </div>
-      <div class="nt-cal-leg">
-        <div class="nt-cal-dot" style="background:var(--neutral-150);border:1px solid var(--neutral-300)"></div>Not started
-      </div>
+    legend = """<div class="nt-cal-legend">
+      <div class="nt-cal-leg"><div class="nt-cal-dot" style="background:var(--ocean-100);border:1px solid var(--ocean-400)"></div>Fully tracked</div>
+      <div class="nt-cal-leg"><div class="nt-cal-dot" style="background:rgba(224,242,254,.7);border:1px solid var(--sky-400)"></div>Partial</div>
+      <div class="nt-cal-leg"><div class="nt-cal-dot" style="background:rgba(255,255,255,.5);border:1px solid var(--border-md)"></div>Not started</div>
     </div>"""
-
-    return (
-        f'<div class="nt-cal-wrap">'
-        f'<div class="nt-cal-grid">{hdr}{cells}</div>'
-        f'{legend}'
-        f'</div>'
-    )
+    return (f'<div class="nt-cal-wrap">'
+            f'<div class="nt-cal-grid">{hdr}{cells}</div>{legend}</div>')
 
 
-# ── Auth ───────────────────────────────────────────────────
+# ── Meal card with CRUD controls ───────────────────────────
 
-def check_password() -> bool:
-    if st.session_state.get("auth"):
-        return True
-    st.markdown(
-        '<div class="nt-login">'
-        '<div class="nt-login-mark">🌿</div>'
-        '<div class="nt-login-title">NutriTrack</div>'
-        '<div class="nt-login-sub">Your personalised nutrition companion</div>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-    pw = st.text_input("", type="password", placeholder="Enter password",
-                       label_visibility="collapsed")
-    _, mid, _ = st.columns([1, 2, 1])
-    with mid:
-        if st.button("Sign in", use_container_width=True, type="primary"):
-            if pw == st.secrets["app_password"]:
-                st.session_state["auth"] = True
-                st.rerun()
-            else:
-                st.error("Incorrect password.")
-    return False
+def meal_card_crud(
+    d: date, person: str, idx: int,
+    meal: dict, meals: list,
+    day_entries: dict, is_future: bool
+):
+    """
+    Renders a single meal card with:
+    - Status tracking (done/skip)
+    - Note + photo
+    - Reorder (▲▼)
+    - Inline edit (slot + desc)
+    - Delete
+    """
+    day_name  = DAYS[d.weekday()]
+    slot      = meal["slot"]
+    plan_desc = meal["desc"]
 
+    entry     = dict(day_entries.get(tk(d, person, idx),
+                     {"status": "pending", "comment": "", "image_url": "", "planned_desc": ""}))
+    status    = entry.get("status", "pending")
+    comment   = entry.get("comment", "")
+    image_url = entry.get("image_url", "")
+    disp_desc = entry.get("planned_desc") or plan_desc
 
-# ── Meal card ──────────────────────────────────────────────
+    uid       = f"{d.isoformat()}_{person}_{idx}"
+    edit_key  = f"edit_{uid}"
+    note_key  = f"note_{uid}"
+    del_key   = f"del_confirm_{uid}"
 
-def meal_card(d: date, person: str, idx: int, custom: dict, day_entries: dict):
-    day_name    = DAYS[d.weekday()]
-    slot        = slot_label(day_name, person, idx, custom)
-    plan_desc   = current_desc(day_name, person, idx, custom)
-    entry       = dict(day_entries.get(tk(d, person, idx),
-                       {"status": "pending", "comment": "", "image_url": "", "planned_desc": ""}))
-    status      = entry.get("status", "pending")
-    comment     = entry.get("comment", "")
-    image_url   = entry.get("image_url", "")
-    display_desc = entry.get("planned_desc") or plan_desc
-    uid          = f"{d.isoformat()}_{person}_{idx}"
-    is_future    = d > TODAY
+    is_editing  = st.session_state.get(edit_key, False)
+    is_noting   = st.session_state.get(note_key, False)
+    is_deleting = st.session_state.get(del_key, False)
 
-    # Card
-    css = "nt-meal" + (" done" if status == "done" else " skipped" if status == "skipped" else "")
+    # ── Card HTML ──────────────────────────────────────────
+    css = "nt-meal" + (" done" if status=="done" else " skipped" if status=="skipped" else "")
     st.markdown(
         f'<div class="{css}">'
-        f'  <div class="nt-meal-row">'
-        f'    <div class="nt-meal-body">'
-        f'      <div class="nt-meal-slot">{slot}</div>'
-        f'      <div class="nt-meal-desc">{display_desc}</div>'
-        f'    </div>'
-        f'    <div>{badge_html(status)}</div>'
-        f'  </div>'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
+        f'<div class="nt-meal-row">'
+        f'<div class="nt-meal-body">'
+        f'<div class="nt-meal-slot">{slot}</div>'
+        f'<div class="nt-meal-desc">{disp_desc}</div>'
+        f'</div>'
+        f'<div>{badge_html(status)}</div>'
+        f'</div></div>', unsafe_allow_html=True)
 
     if image_url:
         st.image(image_url, use_container_width=True)
 
-    if comment and not st.session_state.get(f"open_{uid}", False):
+    if comment and not is_noting:
         st.markdown(f'<div class="nt-note">💬 {comment}</div>', unsafe_allow_html=True)
 
+    # ── Action rows ────────────────────────────────────────
     if not is_future:
-        c1, c2, c3 = st.columns([5, 5, 2])
+        # Row 1: status buttons
+        c1, c2, c3, c4, c5, c6 = st.columns([4, 4, 1, 1, 1, 1])
         with c1:
             lbl = "Mark as done" if status != "done" else "↩ Undo done"
             if st.button(lbl, key=f"done_{uid}", use_container_width=True):
                 entry["status"] = "done" if status != "done" else "pending"
-                if not entry.get("planned_desc"):
-                    entry["planned_desc"] = plan_desc
+                if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
                 fs_set("tracking", tk(d, person, idx), entry)
-                bust(d.isoformat())
-                st.rerun()
+                bust_tracking(d.isoformat()); st.rerun()
         with c2:
             lbl = "Mark as skipped" if status != "skipped" else "↩ Undo skip"
             if st.button(lbl, key=f"skip_{uid}", use_container_width=True):
                 entry["status"] = "skipped" if status != "skipped" else "pending"
-                if not entry.get("planned_desc"):
-                    entry["planned_desc"] = plan_desc
+                if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
                 fs_set("tracking", tk(d, person, idx), entry)
-                bust(d.isoformat())
-                st.rerun()
+                bust_tracking(d.isoformat()); st.rerun()
         with c3:
+            # Note/photo
             icon = "✏️" if (comment or image_url) else "📝"
-            if st.button(icon, key=f"note_{uid}", use_container_width=True):
-                st.session_state[f"open_{uid}"] = not st.session_state.get(f"open_{uid}", False)
+            if st.button(icon, key=f"nbt_{uid}", use_container_width=True):
+                st.session_state[note_key] = not is_noting
+        with c4:
+            # Move up
+            if idx > 0:
+                if st.button("▲", key=f"up_{uid}", use_container_width=True):
+                    meals[idx], meals[idx-1] = meals[idx-1], meals[idx]
+                    save_day_plan(day_name, person, meals)
+                    st.rerun()
+            else:
+                st.markdown("<div style='height:36px'></div>", unsafe_allow_html=True)
+        with c5:
+            # Move down
+            if idx < len(meals) - 1:
+                if st.button("▼", key=f"dn_{uid}", use_container_width=True):
+                    meals[idx], meals[idx+1] = meals[idx+1], meals[idx]
+                    save_day_plan(day_name, person, meals)
+                    st.rerun()
+            else:
+                st.markdown("<div style='height:36px'></div>", unsafe_allow_html=True)
+        with c6:
+            # Edit / delete toggle
+            if st.button("⚙️", key=f"ebt_{uid}", use_container_width=True):
+                st.session_state[edit_key] = not is_editing
+                if is_deleting:
+                    st.session_state[del_key] = False
 
-        if st.session_state.get(f"open_{uid}", False):
-            nc = st.text_area(
-                "Note", value=comment, key=f"ta_{uid}",
-                placeholder="Add a note, substitution, or observation…",
-                label_visibility="collapsed", height=72,
-            )
-            up = st.file_uploader(
-                "Attach a photo", type=["jpg", "jpeg", "png", "heic"],
-                key=f"up_{uid}", label_visibility="collapsed",
-            )
-            cs, cr = st.columns(2)
-            with cs:
-                if st.button("Save note", key=f"sv_{uid}", use_container_width=True):
-                    entry["comment"] = nc
-                    if not entry.get("planned_desc"):
-                        entry["planned_desc"] = plan_desc
-                    if up:
-                        with st.spinner("Uploading photo…"):
-                            url = upload_photo(up.read(), up.name)
-                        if url:
-                            entry["image_url"] = url
-                    fs_set("tracking", tk(d, person, idx), entry)
-                    bust(d.isoformat())
-                    st.session_state[f"open_{uid}"] = False
+    else:
+        # Future date — only allow edit/reorder, no tracking
+        c4, c5, c6 = st.columns([1, 1, 1])
+        with c4:
+            if idx > 0:
+                if st.button("▲", key=f"up_{uid}", use_container_width=True):
+                    meals[idx], meals[idx-1] = meals[idx-1], meals[idx]
+                    save_day_plan(day_name, person, meals)
                     st.rerun()
-            with cr:
-                if image_url and st.button("Remove photo", key=f"rm_{uid}", use_container_width=True):
-                    entry["image_url"] = ""
-                    fs_set("tracking", tk(d, person, idx), entry)
-                    bust(d.isoformat())
+        with c5:
+            if idx < len(meals) - 1:
+                if st.button("▼", key=f"dn_{uid}", use_container_width=True):
+                    meals[idx], meals[idx+1] = meals[idx+1], meals[idx]
+                    save_day_plan(day_name, person, meals)
                     st.rerun()
+        with c6:
+            if st.button("⚙️", key=f"ebt_{uid}", use_container_width=True):
+                st.session_state[edit_key] = not is_editing
+
+    # ── Note / photo panel ─────────────────────────────────
+    if is_noting and not is_future:
+        nc = st.text_area("Note", value=comment, key=f"ta_{uid}",
+                          placeholder="Add a note, substitution, or observation…",
+                          label_visibility="collapsed", height=72)
+        up = st.file_uploader("Attach a photo", type=["jpg","jpeg","png","heic"],
+                              key=f"up_{uid}", label_visibility="collapsed")
+        cs, cr = st.columns(2)
+        with cs:
+            if st.button("Save note", key=f"sv_{uid}", use_container_width=True):
+                entry["comment"] = nc
+                if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
+                if up:
+                    with st.spinner("Uploading…"):
+                        url = upload_photo(up.read(), up.name)
+                    if url: entry["image_url"] = url
+                fs_set("tracking", tk(d, person, idx), entry)
+                bust_tracking(d.isoformat())
+                st.session_state[note_key] = False
+                st.rerun()
+        with cr:
+            if image_url and st.button("Remove photo", key=f"rm_{uid}", use_container_width=True):
+                entry["image_url"] = ""
+                fs_set("tracking", tk(d, person, idx), entry)
+                bust_tracking(d.isoformat()); st.rerun()
+
+    # ── Inline edit panel ──────────────────────────────────
+    if is_editing:
+        st.markdown('<div style="background:rgba(13,148,136,.04);border:1px solid var(--border-md);'
+                    'border-radius:var(--r-md);padding:12px;margin-top:6px">', unsafe_allow_html=True)
+        ns = st.text_input("Slot / time", value=slot, key=f"es_{uid}",
+                           label_visibility="collapsed",
+                           placeholder="Slot / time label (e.g. Breakfast · 8:30 AM)")
+        nd = st.text_area("Description", value=plan_desc, key=f"ed_{uid}",
+                          label_visibility="collapsed",
+                          placeholder="Meal description", height=72)
+        e1, e2, e3 = st.columns(3)
+        with e1:
+            if st.button("Save", key=f"esv_{uid}", use_container_width=True):
+                if ns.strip() or nd.strip():
+                    meals[idx] = {"slot": ns.strip() or slot, "desc": nd.strip() or plan_desc}
+                    save_day_plan(day_name, person, meals)
+                    st.session_state[edit_key] = False
+                    st.rerun()
+        with e2:
+            if st.button("Cancel", key=f"ecn_{uid}", use_container_width=True):
+                st.session_state[edit_key] = False
+                st.rerun()
+        with e3:
+            if st.button("🗑️ Delete", key=f"edel_{uid}", use_container_width=True):
+                st.session_state[del_key] = not is_deleting
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # ── Delete confirm ─────────────────────────────────────
+    if is_deleting:
+        st.warning(f"Delete **{slot}**? This cannot be undone.")
+        dc1, dc2 = st.columns(2)
+        with dc1:
+            if st.button("Yes, delete", key=f"dyes_{uid}", use_container_width=True):
+                meals.pop(idx)
+                save_day_plan(day_name, person, meals)
+                st.session_state.pop(del_key, None)
+                st.session_state.pop(edit_key, None)
+                st.rerun()
+        with dc2:
+            if st.button("Cancel", key=f"dno_{uid}", use_container_width=True):
+                st.session_state[del_key] = False
+                st.rerun()
 
     st.markdown("<div style='margin-bottom:4px'></div>", unsafe_allow_html=True)
 
@@ -538,45 +586,32 @@ def meal_card(d: date, person: str, idx: int, custom: dict, day_entries: dict):
 
 def render_snacks(d: date, person: str):
     st.markdown(section_label("Extra & unplanned"), unsafe_allow_html=True)
-    snacks = fs_list("snacks", filters=[
-        {"field": "date",   "value": d.isoformat()},
-        {"field": "person", "value": person},
-    ])
+    snacks = fs_list("snacks", filters=[{"field":"date","value":d.isoformat()},
+                                        {"field":"person","value":person}])
     for s in snacks:
         ts = s.get("timestamp", "")
         if "T" in ts:
-            try:
-                ts = datetime.fromisoformat(ts.replace("Z", "+00:00")).strftime("%I:%M %p")
-            except Exception:
-                ts = ""
+            try: ts = datetime.fromisoformat(ts.replace("Z","+00:00")).strftime("%I:%M %p")
+            except: ts = ""
         time_part = f" · {ts}" if ts else ""
         st.markdown(
-            f'<div class="nt-snack">'
-            f'<div class="nt-snack-label">Snack{time_part}</div>'
-            f'<div class="nt-snack-desc">{s.get("desc", "")}</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-        if s.get("image_url"):
-            st.image(s["image_url"], use_container_width=True)
+            f'<div class="nt-snack"><div class="nt-snack-label">Snack{time_part}</div>'
+            f'<div class="nt-snack-desc">{s.get("desc","")}</div></div>',
+            unsafe_allow_html=True)
+        if s.get("image_url"): st.image(s["image_url"], use_container_width=True)
         if st.button("Remove", key=f"del_{s['id']}"):
-            fs_del("snacks", s["id"])
-            st.rerun()
+            fs_del("snacks", s["id"]); st.rerun()
 
     if d <= TODAY:
         ak = f"add_{d.isoformat()}_{person}"
         if st.button("+ Log a snack", key=f"btn_{ak}"):
             st.session_state[ak] = not st.session_state.get(ak, False)
         if st.session_state.get(ak, False):
-            desc = st.text_input(
-                "What did you have?", key=f"desc_{ak}",
-                label_visibility="collapsed",
-                placeholder="e.g. 1 chai + 2 biscuits…",
-            )
-            img = st.file_uploader(
-                "Photo (optional)", type=["jpg", "jpeg", "png", "heic"],
-                key=f"simg_{ak}", label_visibility="collapsed",
-            )
+            desc = st.text_input("What did you have?", key=f"desc_{ak}",
+                                 label_visibility="collapsed",
+                                 placeholder="e.g. 1 chai + 2 biscuits…")
+            img = st.file_uploader("Photo (optional)", type=["jpg","jpeg","png","heic"],
+                                   key=f"simg_{ak}", label_visibility="collapsed")
             if st.button("Save snack", key=f"log_{ak}", use_container_width=True):
                 if desc.strip():
                     img_url = ""
@@ -588,146 +623,168 @@ def render_snacks(d: date, person: str):
                         "desc": desc.strip(),  "image_url": img_url,
                         "timestamp": datetime.now(IST).isoformat(),
                     })
+                    st.session_state[ak] = False; st.rerun()
+                else:
+                    st.warning("Please describe what you had.")
+
+
+# ── Add meal form ──────────────────────────────────────────
+
+def add_meal_form(d: date, person: str, meals: list):
+    day_name = DAYS[d.weekday()]
+    ak = f"addmeal_{d.isoformat()}_{person}"
+
+    if st.button("＋ Add a meal", key=f"ambt_{d.isoformat()}_{person}", use_container_width=True):
+        st.session_state[ak] = not st.session_state.get(ak, False)
+
+    if st.session_state.get(ak, False):
+        st.markdown(
+            '<div style="background:rgba(13,148,136,.04);border:1px solid var(--border-md);'
+            'border-radius:var(--r-md);padding:12px;margin-top:6px">',
+            unsafe_allow_html=True)
+        ns = st.text_input("Slot / time", key=f"ams_{ak}",
+                           label_visibility="collapsed",
+                           placeholder="e.g. Post-workout · 9 AM")
+        nd = st.text_area("Description", key=f"amd_{ak}",
+                          label_visibility="collapsed",
+                          placeholder="What will this meal contain?", height=72)
+        a1, a2 = st.columns(2)
+        with a1:
+            if st.button("Add meal", key=f"amc_{ak}", use_container_width=True):
+                if ns.strip() and nd.strip():
+                    meals.append({"slot": ns.strip(), "desc": nd.strip()})
+                    save_day_plan(day_name, person, meals)
                     st.session_state[ak] = False
                     st.rerun()
                 else:
-                    st.warning("Please describe what you had.")
+                    st.warning("Both slot and description are required.")
+        with a2:
+            if st.button("Cancel", key=f"amx_{ak}", use_container_width=True):
+                st.session_state[ak] = False; st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ── Page: Tracker ──────────────────────────────────────────
 
 def page_tracker():
     for k, v in [("sel_date", TODAY), ("cal_year", TODAY.year), ("cal_month", TODAY.month)]:
-        if k not in st.session_state:
-            st.session_state[k] = v
+        if k not in st.session_state: st.session_state[k] = v
 
-    # Date picker
-    sel = st.date_input(
-        "", value=st.session_state.sel_date,
-        min_value=date(2025, 1, 1), max_value=TODAY,
-        label_visibility="collapsed",
-    )
+    sel = st.date_input("", value=st.session_state.sel_date,
+                        min_value=date(2025, 1, 1), max_value=date(2026, 9, 30),
+                        label_visibility="collapsed")
     if sel != st.session_state.sel_date:
         st.session_state.update(sel_date=sel, cal_year=sel.year, cal_month=sel.month)
         st.rerun()
 
     d = st.session_state.sel_date
 
-    # Calendar (collapsed)
     with st.expander("📅  Monthly overview", expanded=False):
         y, m  = st.session_state.cal_year, st.session_state.cal_month
         all_t = load_all_tracking()
         nc1, nc2, nc3 = st.columns([1, 4, 1])
         with nc1:
             if st.button("◀", key="cp", use_container_width=True):
-                if m == 1:
-                    st.session_state.cal_year  -= 1
-                    st.session_state.cal_month  = 12
-                else:
-                    st.session_state.cal_month -= 1
+                if m == 1: st.session_state.cal_year -= 1; st.session_state.cal_month = 12
+                else:      st.session_state.cal_month -= 1
                 st.rerun()
         with nc2:
-            st.markdown(
-                f'<div class="nt-cal-month" style="text-align:center;padding-top:6px">'
-                f'{cal_lib.month_name[m]} {y}</div>',
-                unsafe_allow_html=True,
-            )
+            st.markdown(f'<div class="nt-cal-month" style="text-align:center;padding-top:6px">'
+                        f'{cal_lib.month_name[m]} {y}</div>', unsafe_allow_html=True)
         with nc3:
             if (y, m) < (TODAY.year, TODAY.month):
                 if st.button("▶", key="cn", use_container_width=True):
-                    if m == 12:
-                        st.session_state.cal_year  += 1
-                        st.session_state.cal_month  = 1
-                    else:
-                        st.session_state.cal_month += 1
+                    if m == 12: st.session_state.cal_year += 1; st.session_state.cal_month = 1
+                    else:       st.session_state.cal_month += 1
                     st.rerun()
         st.markdown(calendar_html(y, m, all_t, d), unsafe_allow_html=True)
 
+    day_name  = DAYS[d.weekday()]
+    p1_meals  = load_day_plan(day_name, "p1")
+    p2_meals  = load_day_plan(day_name, "p2")
+    day_ent   = load_day_entries(d.isoformat())
+    is_future = d > TODAY
+
     # Stats
-    day_name   = DAYS[d.weekday()]
-    day_ent    = load_day(d.isoformat())
-    custom     = load_custom_plan()
-    done_n     = sum(
-        1 for p in ["p1", "p2"] for i in range(meal_count(day_name, p))
+    done_n = sum(
+        1 for p, ms in [("p1", p1_meals), ("p2", p2_meals)]
+        for i in range(len(ms))
         if day_ent.get(tk(d, p, i), {}).get("status", "pending") == "done"
     )
-    skipped_n  = sum(
-        1 for p in ["p1", "p2"] for i in range(meal_count(day_name, p))
+    skipped_n = sum(
+        1 for p, ms in [("p1", p1_meals), ("p2", p2_meals)]
+        for i in range(len(ms))
         if day_ent.get(tk(d, p, i), {}).get("status", "pending") == "skipped"
     )
-    total_n    = sum(meal_count(day_name, p) for p in ["p1", "p2"])
-    tracked_n  = done_n + skipped_n
-    pct        = round(tracked_n / total_n * 100) if total_n else 0
-    label      = "Today" if d == TODAY else d.strftime("%A, %d %b %Y")
+    total_n   = len(p1_meals) + len(p2_meals)
+    tracked_n = done_n + skipped_n
+    pct       = round(tracked_n / total_n * 100) if total_n else 0
+    label     = "Today" if d == TODAY else d.strftime("%A, %d %b %Y")
 
     st.markdown(
         f'<div class="nt-stats">'
-        f'  <div class="nt-stat"><div class="nt-stat-val">{done_n}</div>'
-        f'    <div class="nt-stat-lbl">Done</div></div>'
-        f'  <div class="nt-stat"><div class="nt-stat-val accent">{skipped_n}</div>'
-        f'    <div class="nt-stat-lbl">Skipped</div></div>'
-        f'  <div class="nt-stat"><div class="nt-stat-val">{pct}%</div>'
-        f'    <div class="nt-stat-lbl">Complete</div></div>'
+        f'<div class="nt-stat"><div class="nt-stat-val">{done_n}</div>'
+        f'<div class="nt-stat-lbl">Done</div></div>'
+        f'<div class="nt-stat"><div class="nt-stat-val accent">{skipped_n}</div>'
+        f'<div class="nt-stat-lbl">Skipped</div></div>'
+        f'<div class="nt-stat"><div class="nt-stat-val">{pct}%</div>'
+        f'<div class="nt-stat-lbl">Complete</div></div>'
         f'</div>'
         f'<div class="nt-progress-wrap">'
-        f'  <div class="nt-progress-fill" style="width:{pct}%"></div>'
+        f'<div class="nt-progress-fill" style="width:{pct}%"></div>'
         f'</div>'
         f'<div class="nt-progress-label">{label} · {tracked_n} of {total_n} meals tracked</div>',
-        unsafe_allow_html=True,
-    )
+        unsafe_allow_html=True)
 
-    # Person tabs
-    t1, t2 = st.tabs(["🏃  Madhura · Runner", "🏃  Jasraj · Runner"])
+    t1, t2 = st.tabs(["👤  Person 1 · Veg", "🏃  Person 2 · Runner"])
+
     with t1:
         st.markdown(person_header("p1"), unsafe_allow_html=True)
-        for i in range(meal_count(day_name, "p1")):
-            meal_card(d, "p1", i, custom, day_ent)
-        render_snacks(d, "p1")
+        for i, meal in enumerate(p1_meals):
+            meal_card_crud(d, "p1", i, meal, p1_meals, day_ent, is_future)
+        add_meal_form(d, "p1", p1_meals)
+        if not is_future:
+            render_snacks(d, "p1")
+
     with t2:
         st.markdown(person_header("p2"), unsafe_allow_html=True)
-        for i in range(meal_count(day_name, "p2")):
-            meal_card(d, "p2", i, custom, day_ent)
-        render_snacks(d, "p2")
+        for i, meal in enumerate(p2_meals):
+            meal_card_crud(d, "p2", i, meal, p2_meals, day_ent, is_future)
+        add_meal_form(d, "p2", p2_meals)
+        if not is_future:
+            render_snacks(d, "p2")
 
 
 # ── Page: Measurements ─────────────────────────────────────
 
-def last_date(docs: list, field: str):
+def last_date(docs, field):
     hits = [d for d in docs if d.get(field) is not None]
     return hits[-1].get("date") if hits else None
 
-def is_due(last_str, days: int) -> bool:
-    if not last_str:
-        return True
+def is_due(last_str, days):
+    if not last_str: return True
     return (TODAY - date.fromisoformat(last_str)).days >= days
 
 def page_measurements():
-    st.markdown(section_label("Body metrics", margin_top=False), unsafe_allow_html=True)
-    t1, t2 = st.tabs(["🏃  Madhura", "🏃  Jasraj"])
+    st.markdown(section_label("Body metrics", mt=False), unsafe_allow_html=True)
+    t1, t2 = st.tabs(["👤  Person 1", "🏃  Person 2"])
     for tab, person in [(t1, "p1"), (t2, "p2")]:
         with tab:
             docs = sorted(
                 fs_list("measurements", filters=[{"field": "person", "value": person}]),
                 key=lambda x: x.get("date", ""),
             )
-
-            # Weight
-            lw       = last_date(docs, "weight")
-            wdue     = is_due(lw, 7)
-            wbadge   = "nt-due-now" if wdue else "nt-due-ok"
-            wstatus  = "Log now" if wdue else "Up to date"
-            wlastlog = f'<div class="nt-meas-last">Last entry: {lw}</div>' if lw else ""
+            lw      = last_date(docs, "weight")
+            wdue    = is_due(lw, 7)
+            wbadge  = "nt-due-now" if wdue else "nt-due-ok"
+            wstatus = "Log now" if wdue else "Up to date"
+            wlast   = f'<div class="nt-meas-last">Last entry: {lw}</div>' if lw else ""
             st.markdown(
-                f'<div class="nt-meas-card">'
-                f'  <div class="nt-meas-header">'
-                f'    <div class="nt-meas-title">Weight</div>'
-                f'    <span class="nt-due-badge {wbadge}">{wstatus}</span>'
-                f'  </div>'
-                f'  <div style="font-size:11px;color:var(--neutral-400)">Log weekly</div>'
-                f'  {wlastlog}'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
+                f'<div class="nt-meas-card"><div class="nt-meas-header">'
+                f'<div class="nt-meas-title">Weight</div>'
+                f'<span class="nt-due-badge {wbadge}">{wstatus}</span>'
+                f'</div><div style="font-size:11px;color:var(--n400)">Log weekly</div>'
+                f'{wlast}</div>', unsafe_allow_html=True)
             with st.expander("Log weight entry", expanded=wdue):
                 wv = st.number_input("Weight (kg)", 30.0, 200.0, step=0.1,
                                      key=f"wv_{person}", format="%.1f")
@@ -736,26 +793,19 @@ def page_measurements():
                     ex = fs_get("measurements", f"{person}_{wd.isoformat()}") or {}
                     ex.update({"person": person, "date": wd.isoformat(), "weight": float(wv)})
                     fs_set("measurements", f"{person}_{wd.isoformat()}", ex)
-                    st.success(f"✓  {wv} kg saved for {wd}")
-                    st.rerun()
+                    st.success(f"✓  {wv} kg saved for {wd}"); st.rerun()
 
-            # Hip & Waist
-            lh       = last_date(docs, "hip")
-            hdue     = is_due(lh, 14)
-            hbadge   = "nt-due-now" if hdue else "nt-due-ok"
-            hstatus  = "Log now" if hdue else "Up to date"
-            hlastlog = f'<div class="nt-meas-last">Last entry: {lh}</div>' if lh else ""
+            lh      = last_date(docs, "hip")
+            hdue    = is_due(lh, 14)
+            hbadge  = "nt-due-now" if hdue else "nt-due-ok"
+            hstatus = "Log now" if hdue else "Up to date"
+            hlast   = f'<div class="nt-meas-last">Last entry: {lh}</div>' if lh else ""
             st.markdown(
-                f'<div class="nt-meas-card" style="margin-top:4px">'
-                f'  <div class="nt-meas-header">'
-                f'    <div class="nt-meas-title">Hip & Waist</div>'
-                f'    <span class="nt-due-badge {hbadge}">{hstatus}</span>'
-                f'  </div>'
-                f'  <div style="font-size:11px;color:var(--neutral-400)">Log fortnightly</div>'
-                f'  {hlastlog}'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
+                f'<div class="nt-meas-card" style="margin-top:4px"><div class="nt-meas-header">'
+                f'<div class="nt-meas-title">Hip & Waist</div>'
+                f'<span class="nt-due-badge {hbadge}">{hstatus}</span>'
+                f'</div><div style="font-size:11px;color:var(--n400)">Log fortnightly</div>'
+                f'{hlast}</div>', unsafe_allow_html=True)
             with st.expander("Log hip & waist entry", expanded=hdue):
                 hc1, hc2 = st.columns(2)
                 with hc1:
@@ -770,10 +820,8 @@ def page_measurements():
                     ex.update({"person": person, "date": hd.isoformat(),
                                 "hip": float(hv), "waist": float(wv2)})
                     fs_set("measurements", f"{person}_{hd.isoformat()}", ex)
-                    st.success(f"✓  Hip {hv} cm · Waist {wv2} cm saved")
-                    st.rerun()
+                    st.success(f"✓  Hip {hv} cm · Waist {wv2} cm saved"); st.rerun()
 
-            # Trends
             if docs:
                 st.markdown(section_label("Progress trends"), unsafe_allow_html=True)
                 wt_rows = [(d["date"], d["weight"]) for d in docs if d.get("weight") is not None]
@@ -784,111 +832,122 @@ def page_measurements():
                            for d in docs if d.get("hip") is not None]
                 if len(hw_rows) > 1:
                     st.caption("Hip & Waist (cm)")
-                    st.line_chart({
-                        "Hip":   {r[0]: r[1] for r in hw_rows if r[1]},
-                        "Waist": {r[0]: r[2] for r in hw_rows if r[2]},
-                    })
+                    st.line_chart({"Hip":   {r[0]: r[1] for r in hw_rows if r[1]},
+                                   "Waist": {r[0]: r[2] for r in hw_rows if r[2]}})
             else:
                 st.info("No measurements logged yet. Start logging to see your progress trends here.")
 
 
-# ── Page: Edit Plan ────────────────────────────────────────
+# ── Page: Edit plan (week-level overview + reset) ──────────
 
 def page_edit_plan():
-    st.markdown(section_label("Edit meal plan", margin_top=False), unsafe_allow_html=True)
+    st.markdown(section_label("Edit meal plan", mt=False), unsafe_allow_html=True)
     st.caption(
-        "Changes apply from the next occurrence of each day onwards. "
-        "Past entries always display what was planned when they were first logged."
+        "Changes made here or in the Tracker tab persist for all future occurrences. "
+        "Use Reset to restore any day back to the original plan."
     )
-    custom = load_custom_plan()
-    day    = st.selectbox("Select day", DAYS, label_visibility="collapsed")
-    t1, t2 = st.tabs(["🏃  Madhura", "🏃  Jasraj"])
+    day  = st.selectbox("Day", DAYS, label_visibility="collapsed")
+    t1, t2 = st.tabs(["👤  Person 1", "🏃  Person 2"])
+
     for tab, person in [(t1, "p1"), (t2, "p2")]:
         with tab:
             st.markdown(person_header(person), unsafe_allow_html=True)
-            for i in range(meal_count(day, person)):
-                pk         = f"{day}_{person}_{i}"
-                cur_entry  = custom.get(pk, {})
-                is_custom  = pk in custom
-                cur_desc   = current_desc(day, person, i, custom)
-                cur_slot   = slot_label(day, person, i, custom)
-                title      = slot_label(day, person, i, custom)
-                if is_custom:
-                    title += "  ·  ✏️ customised"
+            meals     = load_day_plan(day, person)
+            default   = [{"slot": m["slot"], "desc": m["desc"]} for m in DEFAULT_MEALS[day][person]]
+            is_custom = meals != default
+
+            if is_custom:
+                st.info(f"This day has {len(meals)} meals (default has {len(default)}).")
+                if st.button("Reset to default plan", key=f"rst_{day}_{person}",
+                             use_container_width=True):
+                    reset_day_plan(day, person)
+                    st.success("Reset to default plan."); st.rerun()
+
+            for i, meal in enumerate(meals):
+                pk = f"ep_{day}_{person}_{i}"
+                is_changed = i >= len(default) or meal != default[i]
+                title = meal["slot"] + ("  ·  ✏️" if is_changed else "")
                 with st.expander(title, expanded=False):
-                    st.caption("Time / slot label")
-                    ns = st.text_input(
-                        "Slot", value=cur_slot, key=f"es_{pk}",
-                        label_visibility="collapsed",
-                        placeholder="e.g. Breakfast · 8:30 AM",
-                    )
-                    st.caption("Meal description")
-                    nd = st.text_area(
-                        "Description", value=cur_desc, key=f"ep_{pk}",
-                        height=80, label_visibility="collapsed",
-                    )
-                    cc1, cc2 = st.columns(2)
+                    ns = st.text_input("Slot / time", value=meal["slot"], key=f"es_{pk}",
+                                       label_visibility="collapsed",
+                                       placeholder="e.g. Breakfast · 8:30 AM")
+                    nd = st.text_area("Description", value=meal["desc"], key=f"ed_{pk}",
+                                      height=80, label_visibility="collapsed")
+                    cc1, cc2, cc3 = st.columns(3)
                     with cc1:
-                        if st.button("Save change", key=f"sv_{pk}", use_container_width=True):
-                            if nd.strip() or ns.strip():
-                                payload = {
-                                    "desc": nd.strip() or cur_desc,
-                                    "slot": ns.strip() or cur_slot,
-                                }
-                                fs_set("meal_plan", pk, payload)
-                                load_custom_plan.clear()
-                                st.success("Saved.")
-                                st.rerun()
+                        if st.button("Save", key=f"sv_{pk}", use_container_width=True):
+                            if ns.strip() or nd.strip():
+                                meals[i] = {"slot": ns.strip() or meal["slot"],
+                                            "desc": nd.strip() or meal["desc"]}
+                                save_day_plan(day, person, meals)
+                                st.success("Saved."); st.rerun()
                     with cc2:
-                        if is_custom:
-                            if st.button("Reset to default", key=f"rs_{pk}",
-                                         use_container_width=True):
-                                fs_del("meal_plan", pk)
-                                load_custom_plan.clear()
-                                st.success("Reset to default.")
+                        if st.button("▲ Move up", key=f"mup_{pk}", use_container_width=True):
+                            if i > 0:
+                                meals[i], meals[i-1] = meals[i-1], meals[i]
+                                save_day_plan(day, person, meals)
                                 st.rerun()
+                    with cc3:
+                        if st.button("🗑️ Delete", key=f"del_{pk}", use_container_width=True):
+                            meals.pop(i)
+                            save_day_plan(day, person, meals)
+                            st.success("Meal removed."); st.rerun()
+
+            # Add new meal
+            st.markdown("<div style='margin-top:8px'></div>", unsafe_allow_html=True)
+            nak = f"nadd_{day}_{person}"
+            if st.button("＋ Add a meal to this day", key=f"nabt_{day}_{person}",
+                         use_container_width=True):
+                st.session_state[nak] = not st.session_state.get(nak, False)
+            if st.session_state.get(nak, False):
+                nns = st.text_input("Slot / time", key=f"nams_{nak}",
+                                    label_visibility="collapsed",
+                                    placeholder="e.g. Post-workout · 9 AM")
+                nnd = st.text_area("Description", key=f"namd_{nak}",
+                                   label_visibility="collapsed",
+                                   placeholder="Meal description", height=72)
+                na1, na2 = st.columns(2)
+                with na1:
+                    if st.button("Add", key=f"namc_{nak}", use_container_width=True):
+                        if nns.strip() and nnd.strip():
+                            meals.append({"slot": nns.strip(), "desc": nnd.strip()})
+                            save_day_plan(day, person, meals)
+                            st.session_state[nak] = False
+                            st.rerun()
+                        else:
+                            st.warning("Both slot and description are required.")
+                with na2:
+                    if st.button("Cancel", key=f"nax_{nak}", use_container_width=True):
+                        st.session_state[nak] = False; st.rerun()
 
 
 # ── Main ───────────────────────────────────────────────────
 
 def main():
-    if not check_password():
-        return
+    if not check_password(): return
 
-    # Header
     today_str = TODAY.strftime("%a, %d %b %Y")
     st.markdown(
         f'<div class="nt-header">'
-        f'  <div class="nt-brand">'
-        f'    <div class="nt-logo">🌿</div>'
-        f'    <div class="nt-brand-text">'
-        f'      <div class="nt-brand-name">NutriTrack</div>'
-        f'      <div class="nt-brand-sub">6-month nutrition programme</div>'
-        f'    </div>'
-        f'  </div>'
-        f'  <div class="nt-header-meta">'
-        f'    <div class="nt-header-date">{today_str}</div>'
-        f'    <div class="nt-header-plan">Personalised plan</div>'
-        f'  </div>'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
+        f'<div class="nt-brand"><div class="nt-logo">🌿</div>'
+        f'<div><div class="nt-brand-name">NutriTrack</div>'
+        f'<div class="nt-brand-sub">6-month nutrition programme</div></div></div>'
+        f'<div class="nt-header-meta">'
+        f'<div class="nt-header-date">{today_str}</div>'
+        f'<div class="nt-header-plan">Personalised plan</div>'
+        f'</div></div>', unsafe_allow_html=True)
 
-    # Navigation
-    page = st.radio(
-        "", ["📅  Tracker", "📏  Measurements", "✏️  Edit plan"],
-        horizontal=True, label_visibility="collapsed",
-    )
+    page = st.radio("", ["📅  Tracker", "📏  Measurements", "✏️  Edit plan"],
+                    horizontal=True, label_visibility="collapsed")
 
     if   page == "📅  Tracker":       page_tracker()
     elif page == "📏  Measurements":  page_measurements()
     else:                              page_edit_plan()
 
     with st.expander("⚙️  Settings"):
-        st.caption("NutriTrack · v6.0")
+        st.caption("NutriTrack · v7.0")
         if st.button("Sign out", type="secondary"):
-            st.session_state["auth"] = False
-            st.rerun()
+            st.session_state["auth"] = False; st.rerun()
 
 
 if __name__ == "__main__":

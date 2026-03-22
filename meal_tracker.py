@@ -557,23 +557,35 @@ def meal_card_crud(
         f'<div>{badge_html(status)}</div>'
         f'</div></div>', unsafe_allow_html=True)
 
-    if image_url:
-        img_open_key = f"img_open_{uid}"
-        # Thumbnail always visible; tap View to expand
-        t_col, e_col = st.columns([3, 1])
-        with t_col:
-            st.image(image_url, width=80)
-        with e_col:
-            expand_label = "▲ Close" if st.session_state.get(img_open_key) else "🔍 View"
-            if st.button(expand_label, key=f"imgbtn_{uid}", use_container_width=True,
-                         help="Toggle full view"):
-                st.session_state[img_open_key] = not st.session_state.get(img_open_key, False)
+    # ── Note + photo always visible below meal card ─────────
+    if comment or image_url:
+        parts = []
+        if comment:
+            parts.append(f'<div class="nt-note-text">💬 {comment}</div>')
+        if image_url:
+            img_open_key = f"img_open_{uid}"
+            is_open = st.session_state.get(img_open_key, False)
+            # Clickable thumbnail using HTML — tap toggles expand
+            parts.append(
+                f'<img class="nt-thumb" src="{image_url}" ' +
+                f'onclick="window.parent.postMessage({{type:\'streamlit:setComponentValue\', ' +
+                f'key:\'_dummy\'}}, \'*\')" ' +
+                f'title="Click to expand" />'
+            )
+        st.markdown(
+            f'<div class="nt-note-wrap">{" ".join(parts)}</div>',
+            unsafe_allow_html=True
+        )
+        # Full-size expand toggle via button (reliable cross-browser)
+        if image_url:
+            img_open_key = f"img_open_{uid}"
+            is_open = st.session_state.get(img_open_key, False)
+            if st.button("▲ Hide photo" if is_open else "🔍 View photo",
+                         key=f"imgbtn_{uid}", use_container_width=False):
+                st.session_state[img_open_key] = not is_open
                 st.rerun(scope="fragment")
-        if st.session_state.get(img_open_key):
-            st.image(image_url, use_container_width=True)
-
-    if comment:
-        st.markdown(f'<div class="nt-note">💬 {comment}</div>', unsafe_allow_html=True)
+            if is_open:
+                st.image(image_url, use_container_width=True)
 
     # ── Action rows ────────────────────────────────────────
     if not is_future:

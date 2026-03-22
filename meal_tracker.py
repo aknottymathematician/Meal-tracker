@@ -669,6 +669,7 @@ def meal_card_crud(
             note_icon = "✏️" if (comment or image_url) else "📝"
             if st.button(note_icon, key=f"nbt_{uid}", use_container_width=True):
                 st.session_state["active_note"] = uid if not is_noting else None
+                st.rerun(scope="fragment")
         with a4:
             if idx > 0:
                 if st.button("▲", key=f"mup_{uid}", use_container_width=True):

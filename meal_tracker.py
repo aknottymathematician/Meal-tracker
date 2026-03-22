@@ -349,9 +349,9 @@ def load_all_tracking() -> dict:
     return {doc["id"]: doc for doc in fs_list("tracking")}
 
 def load_day_entries(date_str: str) -> dict:
-    """Session-state backed — instant on rerun."""
+    """Session-state backed. Re-fetches from Firestore if key missing or empty."""
     sk = f"_de_{date_str}"
-    if sk not in st.session_state:
+    if sk not in st.session_state or not st.session_state[sk]:
         st.session_state[sk] = {
             doc["id"]: doc
             for doc in fs_list("tracking")
@@ -855,6 +855,11 @@ def page_tracker():
                         min_value=date(2025, 1, 1), max_value=date(2026, 9, 30),
                         label_visibility="collapsed")
     if sel != st.session_state.sel_date:
+        # Bust the old date's session cache before navigating away,
+        # so returning to it always re-reads fresh data from Firestore.
+        old_sk = f"_de_{st.session_state.sel_date.isoformat()}"
+        if old_sk in st.session_state:
+            del st.session_state[old_sk]
         st.session_state.update(sel_date=sel, cal_year=sel.year, cal_month=sel.month)
         st.rerun()
 
@@ -1134,7 +1139,9 @@ def page_edit_plan():
         "Changes made here or in the Tracker tab persist for all future occurrences. "
         "Use Reset to restore any day back to the original plan."
     )
-    day  = st.selectbox("Day", DAYS, label_visibility="collapsed")
+    today_day = DAYS[TODAY.weekday()]
+    default_day_idx = DAYS.index(today_day) if today_day in DAYS else 0
+    day = st.selectbox("Day", DAYS, index=default_day_idx, label_visibility="collapsed")
     t1, t2 = st.tabs(["\U0001f464  Person 1", "\U0001f3c3  Person 2"])
 
     for tab, person in [(t1, "p1"), (t2, "p2")]:

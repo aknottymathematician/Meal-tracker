@@ -513,11 +513,11 @@ def badge_html(status: str) -> str:
 def person_header(person: str) -> str:
     if person == "p1":
         return ('<div class="nt-person p1"><div class="nt-person-avatar">P1</div>'
-                '<div><div class="nt-person-name">Madhura</div>'
+                '<div><div class="nt-person-name">Person 1</div>'
                 '<div class="nt-person-role">Vegetarian</div></div></div>')
     return ('<div class="nt-person p2"><div class="nt-person-avatar">P2</div>'
-            '<div><div class="nt-person-name">Jasraj</div>'
-            '<div class="nt-person-role">Non-Vegetarian</div></div></div>')
+            '<div><div class="nt-person-name">Person 2</div>'
+            '<div class="nt-person-role">Non-veg · Runner</div></div></div>')
 
 def section_label(text: str, mt: bool = True) -> str:
     s = "margin-top:0" if not mt else ""
@@ -1060,7 +1060,7 @@ def page_tracker():
     is_future = d > TODAY
     pv        = st.session_state.get("_plan_version", 0)
 
-    t1, t2 = st.tabs(["🏃  Madhura · Runner", "🏃  Jasraj · Runner"])
+    t1, t2 = st.tabs(["👤  Person 1 · Veg", "🏃  Person 2 · Runner"])
 
     nv = st.session_state.get("_note_version", 0)
     with t1:
@@ -1081,7 +1081,7 @@ def is_due(last_str, days):
 
 def page_measurements():
     st.markdown(section_label("Body metrics", mt=False), unsafe_allow_html=True)
-    t1, t2 = st.tabs(["🏃  Madhura", "🏃  Jasraj"])
+    t1, t2 = st.tabs(["👤  Person 1", "🏃  Person 2"])
 
     for tab, person in [(t1, "p1"), (t2, "p2")]:
         with tab:
@@ -1279,7 +1279,7 @@ def page_edit_plan():
     today_day = DAYS[TODAY.weekday()]
     default_day_idx = DAYS.index(today_day) if today_day in DAYS else 0
     day = st.selectbox("Day", DAYS, index=default_day_idx, label_visibility="collapsed")
-    t1, t2 = st.tabs(["\U0001f464  Madhura", "\U0001f3c3  Jasraj"])
+    t1, t2 = st.tabs(["\U0001f464  Person 1", "\U0001f3c3  Person 2"])
 
     for tab, person in [(t1, "p1"), (t2, "p2")]:
         with tab:
@@ -1373,6 +1373,30 @@ def page_edit_plan():
 
 # ── Main ───────────────────────────────────────────────────
 
+def _render_reminder_prefs(person: str):
+    """Let user toggle which meal slots get WhatsApp reminders."""
+    day_sel = st.selectbox("Day", DAYS, key=f"rd_{person}",
+                           label_visibility="collapsed")
+    meals   = load_day_plan(day_sel, person)
+    prefs   = fs_get("reminders", person) or {}
+    enabled = {s["slot"] for s in prefs.get("slots", []) if s.get("enabled")}
+    updated = []
+    changed = False
+    for meal in meals:
+        slot    = meal["slot"]
+        is_on   = slot in enabled
+        new_val = st.toggle(slot, value=is_on, key=f"rt_{person}_{day_sel}_{slot[:20]}")
+        updated.append({"slot": slot, "enabled": new_val})
+        if new_val != is_on:
+            changed = True
+    if changed:
+        other     = [s for s in prefs.get("slots", [])
+                     if not any(m["slot"] == s["slot"] for m in meals)]
+        all_slots = other + updated
+        fs_set("reminders", person, {"slots": all_slots})
+        st.success("Saved ✓")
+
+
 def main():
     if not check_password(): return
 
@@ -1402,15 +1426,15 @@ def main():
         st.caption("NutriTrack v7.0")
         sa1, sa2 = st.columns(2)
         with sa1:
-            if st.button("Reset ALL days - Madhura", key="rsta_p1", use_container_width=True):
+            if st.button("Reset ALL days - Person 1", key="rsta_p1", use_container_width=True):
                 with st.spinner("Resetting..."):
                     reset_all_plans("p1")
-                st.success("Madhura reset to default for all days."); st.rerun()
+                st.success("Person 1 reset to default for all days."); st.rerun()
         with sa2:
-            if st.button("Reset ALL days - Jasraj", key="rsta_p2", use_container_width=True):
+            if st.button("Reset ALL days - Person 2", key="rsta_p2", use_container_width=True):
                 with st.spinner("Resetting..."):
                     reset_all_plans("p2")
-                st.success("Jasraj reset to default for all days."); st.rerun()
+                st.success("Person 2 reset to default for all days."); st.rerun()
         st.caption("Or reset a single day:")
         reset_day_sel = st.selectbox("Day", ["- select -"] + DAYS,
                                      key="reset_day_sel", label_visibility="collapsed")
@@ -1429,6 +1453,16 @@ def main():
                     st.success(f"P2 {reset_day_sel} reset."); st.rerun()
                 else:
                     st.warning("Select a day first.")
+        st.divider()
+
+        # ── WhatsApp Reminder Preferences ─────────────────
+        st.markdown("**📱 WhatsApp Reminders**")
+        st.caption("Configure meal-time reminders sent via WhatsApp.")
+        with st.expander("Person 1 — reminder slots", expanded=False):
+            _render_reminder_prefs("p1")
+        with st.expander("Person 2 — reminder slots", expanded=False):
+            _render_reminder_prefs("p2")
+
         st.divider()
         if st.button("Sign out", type="secondary"):
             st.session_state["auth"] = False; st.rerun()

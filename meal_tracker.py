@@ -592,25 +592,42 @@ def meal_card_crud(
         f'<div>{badge_html(status)}</div>'
         f'</div></div>', unsafe_allow_html=True)
 
-    # ── Note + photo always visible below meal card ─────────
-    if comment:
-        st.markdown(
-            f'<div class="nt-note-text">💬 {comment}</div>',
-            unsafe_allow_html=True,
-        )
-    if image_url:
-        img_open_key = f"img_open_{uid}"
-        is_open = st.session_state.get(img_open_key, False)
-        ic1, ic2 = st.columns([1, 4])
-        with ic1:
-            st.image(image_url, width=64)
-        with ic2:
-            if st.button("▲ Hide" if is_open else "🔍 Full view",
-                         key=f"imgbtn_{uid}", use_container_width=True):
-                st.session_state[img_open_key] = not is_open
+    # ── Note + photo — only show if slot matches (prevents index-drift) ─────
+    # entry["slot_key"] anchors the note to a specific slot name
+    slot_matches = (not entry.get("slot_key")) or entry.get("slot_key") == slot
+    if (comment or image_url) and slot_matches:
+        nd1, nd2 = st.columns([6, 1])
+        with nd1:
+            if comment:
+                st.markdown(
+                    f'<div class="nt-note-text">💬 {comment}</div>',
+                    unsafe_allow_html=True,
+                )
+        with nd2:
+            if st.button("✕", key=f"clr_{uid}", use_container_width=True,
+                         help="Clear note & photo"):
+                entry["comment"]   = ""
+                entry["image_url"] = ""
+                _sk2 = f"_de_{d.isoformat()}"
+                if _sk2 not in st.session_state:
+                    st.session_state[_sk2] = {}
+                st.session_state[_sk2][tk(d, person, idx)] = dict(entry)
+                fs_set("tracking", tk(d, person, idx), entry)
+                load_all_tracking.clear()
                 st.rerun(scope="fragment")
-        if is_open:
-            st.image(image_url, use_container_width=True)
+        if image_url and slot_matches:
+            img_open_key = f"img_open_{uid}"
+            is_open = st.session_state.get(img_open_key, False)
+            ic1, ic2 = st.columns([1, 4])
+            with ic1:
+                st.image(image_url, width=64)
+            with ic2:
+                if st.button("▲ Hide" if is_open else "🔍 Full view",
+                             key=f"imgbtn_{uid}", use_container_width=True):
+                    st.session_state[img_open_key] = not is_open
+                    st.rerun(scope="fragment")
+            if is_open:
+                st.image(image_url, use_container_width=True)
 
     # ── Action rows ────────────────────────────────────────
     if not is_future:
@@ -619,12 +636,15 @@ def meal_card_crud(
         with a1:
             done_lbl = "✅ Done" if status != "done" else "↩ Undo"
             if st.button(done_lbl, key=f"done_{uid}", use_container_width=True):
+                entry["slot_key"] = slot  # bind note/status to this slot
+                entry["slot_key"] = slot
                 entry["status"] = "done" if status != "done" else "pending"
                 update_entry(d.isoformat(), tk(d, person, idx), entry)
                 st.rerun(scope="fragment")
         with a2:
             skip_lbl = "⏭ Skip" if status != "skipped" else "↩ Undo"
             if st.button(skip_lbl, key=f"skip_{uid}", use_container_width=True):
+                entry["slot_key"] = slot
                 entry["status"] = "skipped" if status != "skipped" else "pending"
                 update_entry(d.isoformat(), tk(d, person, idx), entry)
                 st.rerun(scope="fragment")
@@ -708,7 +728,8 @@ def meal_card_crud(
         b1, b2, b3 = st.columns(3)
         with b1:
             if st.button("💾 Save", key=f"sv_{uid}", use_container_width=True):
-                entry["comment"] = st.session_state.get(_ta_key, "").strip()
+                entry["comment"]   = st.session_state.get(_ta_key, "").strip()
+                entry["slot_key"]  = slot  # anchor to this exact slot
                 cached = st.session_state.pop(_ph_key, None)
                 if cached:
                     with st.spinner("Uploading…"):

@@ -513,11 +513,11 @@ def badge_html(status: str) -> str:
 def person_header(person: str) -> str:
     if person == "p1":
         return ('<div class="nt-person p1"><div class="nt-person-avatar">P1</div>'
-                '<div><div class="nt-person-name">Person 1</div>'
+                '<div><div class="nt-person-name">Madhura</div>'
                 '<div class="nt-person-role">Vegetarian</div></div></div>')
     return ('<div class="nt-person p2"><div class="nt-person-avatar">P2</div>'
-            '<div><div class="nt-person-name">Person 2</div>'
-            '<div class="nt-person-role">Non-veg · Runner</div></div></div>')
+            '<div><div class="nt-person-name">Jasraj</div>'
+            '<div class="nt-person-role">Non-Vegetarian</div></div></div>')
 
 def section_label(text: str, mt: bool = True) -> str:
     s = "margin-top:0" if not mt else ""
@@ -1060,7 +1060,7 @@ def page_tracker():
     is_future = d > TODAY
     pv        = st.session_state.get("_plan_version", 0)
 
-    t1, t2 = st.tabs(["👤  Person 1 · Veg", "🏃  Person 2 · Runner"])
+    t1, t2 = st.tabs(["🏃  Madhura · Runner", "🏃  Jasraj · Runner"])
 
     nv = st.session_state.get("_note_version", 0)
     with t1:
@@ -1081,7 +1081,7 @@ def is_due(last_str, days):
 
 def page_measurements():
     st.markdown(section_label("Body metrics", mt=False), unsafe_allow_html=True)
-    t1, t2 = st.tabs(["👤  Person 1", "🏃  Person 2"])
+    t1, t2 = st.tabs(["🏃  Madhura", "🏃  Jasraj"])
 
     for tab, person in [(t1, "p1"), (t2, "p2")]:
         with tab:
@@ -1279,7 +1279,7 @@ def page_edit_plan():
     today_day = DAYS[TODAY.weekday()]
     default_day_idx = DAYS.index(today_day) if today_day in DAYS else 0
     day = st.selectbox("Day", DAYS, index=default_day_idx, label_visibility="collapsed")
-    t1, t2 = st.tabs(["\U0001f464  Person 1", "\U0001f3c3  Person 2"])
+    t1, t2 = st.tabs(["\U0001f464  Madhura", "\U0001f3c3  Jasraj"])
 
     for tab, person in [(t1, "p1"), (t2, "p2")]:
         with tab:
@@ -1402,15 +1402,15 @@ def main():
         st.caption("NutriTrack v7.0")
         sa1, sa2 = st.columns(2)
         with sa1:
-            if st.button("Reset ALL days - Person 1", key="rsta_p1", use_container_width=True):
+            if st.button("Reset ALL days - Madhura", key="rsta_p1", use_container_width=True):
                 with st.spinner("Resetting..."):
                     reset_all_plans("p1")
-                st.success("Person 1 reset to default for all days."); st.rerun()
+                st.success("Madhura reset to default for all days."); st.rerun()
         with sa2:
-            if st.button("Reset ALL days - Person 2", key="rsta_p2", use_container_width=True):
+            if st.button("Reset ALL days - Jasraj", key="rsta_p2", use_container_width=True):
                 with st.spinner("Resetting..."):
                     reset_all_plans("p2")
-                st.success("Person 2 reset to default for all days."); st.rerun()
+                st.success("Jasraj reset to default for all days."); st.rerun()
         st.caption("Or reset a single day:")
         reset_day_sel = st.selectbox("Day", ["- select -"] + DAYS,
                                      key="reset_day_sel", label_visibility="collapsed")

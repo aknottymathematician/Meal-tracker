@@ -1,0 +1,436 @@
+{
+  "Mon": {
+    "p1": [
+      {
+        "slot": "Pre-training · 6 AM",
+        "desc": "1 glass of plain water + 1 med banana OR 1 whole fruit (Apple/Orange/Chickoo/Guava)"
+      },
+      {
+        "slot": "During training",
+        "desc": "500–600 ml of plain water"
+      },
+      {
+        "slot": "Breakfast · 8:30 AM",
+        "desc": "1 scoop whey protein in 200 ml water + 30 g moong sprouts (15 g raw)"
+      },
+      {
+        "slot": "Lunch · 12:30 PM",
+        "desc": "100 g raw salad + 2 methi/cabbage parathas + 50 g tofu bhurji + 150 ml chaas + 1 scoop samah powder"
+      },
+      {
+        "slot": "Evening snack · 4 PM",
+        "desc": "1 cup green tea + 1 vit-C rich fruit"
+      },
+      {
+        "slot": "Dinner · 7 PM",
+        "desc": "100 g sabzi/salad + 1 multigrain bread slice + 70 g tofu bhurji"
+      }
+    ],
+    "p2": [
+      {
+        "slot": "Sip — first half of day",
+        "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt) — sip throughout morning"
+      },
+      {
+        "slot": "Pre-training · 5:30–6 AM",
+        "desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee (no sugar) | During training: plain water"
+      },
+      {
+        "slot": "Breakfast · 8:30 AM",
+        "desc": "400 ml oats protein smoothie + 30 g moong sprouts (15 g raw)"
+      },
+      {
+        "slot": "Mid-morning · 10 AM",
+        "desc": "1 vit-C rich fruit + 4 egg whites (bhurji or omelette)"
+      },
+      {
+        "slot": "Lunch · 12:30 PM",
+        "desc": "100 g salad + 3 methi/cabbage parathas + 100 g tofu bhurji + 100 g skyr yogurt"
+      },
+      {
+        "slot": "Evening · 4 PM",
+        "desc": "20 g roasted peanuts + ½ scoop whey in 200 ml water"
+      },
+      {
+        "slot": "Dinner · 7 PM",
+        "desc": "100 g sabzi/salad + 1 multigrain bread + 150 g tofu bhurji"
+      },
+      {
+        "slot": "Bedtime",
+        "desc": "200 ml toned milk + 2 pinches cinnamon (no sugar)"
+      }
+    ]
+  },
+  "Tue": {
+    "p1": [
+      {
+        "slot": "Pre-training · 6 AM",
+        "desc": "1 glass of plain water + 1 med banana OR 1 whole fruit (Apple/Orange/Chickoo/Guava)"
+      },
+      {
+        "slot": "During training",
+        "desc": "300–400 ml of plain water"
+      },
+      {
+        "slot": "Breakfast · 8:30 AM",
+        "desc": "1 scoop whey protein in 200 ml water + 30 g chickpeas (15 g raw)"
+      },
+      {
+        "slot": "Lunch · 12:30 PM",
+        "desc": "100 g raw salad + 2 jowar bhakri + 50 g low fat pan fry paneer + 50 g plain curd + 1 scoop samah powder"
+      },
+      {
+        "slot": "Evening snack · 4 PM",
+        "desc": "1 cup green tea + 1 vit-C rich fruit"
+      },
+      {
+        "slot": "Dinner · 7 PM",
+        "desc": "100 g sabzi/salad + 1 jowar bhakri + 70 g low fat tossed paneer"
+      }
+    ],
+    "p2": [
+      {
+        "slot": "Sip — first half of day",
+        "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"
+      },
+      {
+        "slot": "Pre-training · 5:30–6 AM",
+        "desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During training 6:30–8 AM: 300–500 ml plain water + Supply 6 salts (1 sachet in 500 ml)"
+      },
+      {
+        "slot": "Breakfast · 8:30 AM",
+        "desc": "400 ml oats protein smoothie + 30 g boiled chickpeas (15 g raw)"
+      },
+      {
+        "slot": "Mid-morning · 10 AM",
+        "desc": "1 vit-C rich fruit + 4 egg whites"
+      },
+      {
+        "slot": "Lunch · 12:30 PM",
+        "desc": "100 g salad + 3 jowar bhakri + 100 g low fat pan fry paneer + 100 g plain curd"
+      },
+      {
+        "slot": "Evening · 4 PM",
+        "desc": "20 g makhana + ½ scoop whey in 200 ml water"
+      },
+      {
+        "slot": "Dinner · 7 PM",
+        "desc": "100 g sabzi/salad + 2 jowar bhakri + 150 g low fat tossed paneer"
+      },
+      {
+        "slot": "Bedtime",
+        "desc": "200 ml toned milk + 2 pinches cinnamon (no sugar)"
+      }
+    ]
+  },
+  "Wed": {
+    "p1": [
+      {
+        "slot": "Pre-training · 6 AM",
+        "desc": "1 glass of plain water + 1 med banana OR 1 whole fruit (Apple/Orange/Chickoo/Guava)"
+      },
+      {
+        "slot": "During training",
+        "desc": "500–600 ml of plain water"
+      },
+      {
+        "slot": "Breakfast · 8:30 AM",
+        "desc": "1 vegetable sandwich + 1 scoop whey protein in 200 ml water"
+      },
+      {
+        "slot": "Lunch · 12:30 PM",
+        "desc": "100 g raw salad + 200 g mix veg pulao (rice + quinoa) + 100 g skyr protein yogurt + 1 scoop samah powder"
+      },
+      {
+        "slot": "Evening snack · 4 PM",
+        "desc": "1 cup green tea + 1 vit-C rich fruit"
+      },
+      {
+        "slot": "Dinner · 7 PM",
+        "desc": "50 g boiled chickpeas / 150 ml dal (30 g raw) + 70 g air fried paneer & 100 g sautéed veggies OR 70 g pan sautéed paneer & 100 g veggies"
+      }
+    ],
+    "p2": [
+      {
+        "slot": "Sip — first half of day",
+        "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"
+      },
+      {
+        "slot": "Pre-training · 5:30–6 AM",
+        "desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During training 6–7 AM: Supply 6 salts (1 sachet in 600 ml)"
+      },
+      {
+        "slot": "Breakfast · 8:30 AM",
+        "desc": "2 veg sandwiches + 200 ml toned milk + 1 scoop whey protein"
+      },
+      {
+        "slot": "Mid-morning · 10 AM",
+        "desc": "1 vit-C rich fruit + 4 egg whites"
+      },
+      {
+        "slot": "Lunch · 12:30 PM",
+        "desc": "100 g salad + 200 g mix veg pulao (rice + quinoa) + 100 g chicken kheema + 200 ml chaas"
+      },
+      {
+        "slot": "Evening · 4 PM",
+        "desc": "20 g roasted peanuts + ½ scoop whey in 200 ml water"
+      },
+      {
+        "slot": "Dinner · 7 PM",
+        "desc": "100 g sabzi + 100 g boiled chickpeas / 150 ml dal (30 g) + 150 g air fried / pan sautéed chicken + 100 g sautéed veggies"
+      },
+      {
+        "slot": "Bedtime",
+        "desc": "200 ml toned milk + 2 pinches cinnamon (no sugar)"
+      }
+    ]
+  },
+  "Thu": {
+    "p1": [
+      {
+        "slot": "Pre-training · 6 AM",
+        "desc": "1 glass of plain water + 1 med banana OR 1 whole fruit (Apple/Orange/Chickoo/Guava)"
+      },
+      {
+        "slot": "During training",
+        "desc": "500–600 ml of plain water"
+      },
+      {
+        "slot": "Breakfast · 8:30 AM",
+        "desc": "1 scoop whey protein in 200 ml water + 30 g kala channa (15 g raw, soak overnight)"
+      },
+      {
+        "slot": "Lunch · 12:30 PM",
+        "desc": "100 g raw salad + 2 whole wheat roti + 100 g rajma masala (30 g dry rajma) + 50 g plain curd + 1 scoop samah powder"
+      },
+      {
+        "slot": "Evening snack · 4 PM",
+        "desc": "1 cup green tea + 1 vit-C rich fruit"
+      },
+      {
+        "slot": "Dinner · 7 PM",
+        "desc": "100 g sabzi/salad + 1 whole wheat roti + 70 g tofu stir fry"
+      }
+    ],
+    "p2": [
+      {
+        "slot": "Sip — first half of day",
+        "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"
+      },
+      {
+        "slot": "Pre-training · 5:30–6 AM",
+        "desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During training 6:30–8 AM: 300–500 ml plain water + Supply 6 salts (1 sachet in 500 ml)"
+      },
+      {
+        "slot": "Breakfast · 8:30 AM",
+        "desc": "400 ml oats protein porridge + 30 g boiled kala channa (15 g raw)"
+      },
+      {
+        "slot": "Mid-morning · 10 AM",
+        "desc": "1 vit-C rich fruit + 4 egg whites"
+      },
+      {
+        "slot": "Lunch · 12:30 PM",
+        "desc": "100 g salad + 3 whole wheat roti + 150 g rajma masala (50 g rajma) + 100 g skyr yogurt"
+      },
+      {
+        "slot": "Evening · 4 PM",
+        "desc": "20 g makhana + ½ scoop whey in 200 ml water"
+      },
+      {
+        "slot": "Dinner · 7 PM",
+        "desc": "100 g sabzi/salad + 2 whole wheat roti + 150 g tofu stir fry"
+      },
+      {
+        "slot": "Bedtime",
+        "desc": "200 ml toned milk + 2 pinches cinnamon (no sugar)"
+      }
+    ]
+  },
+  "Fri": {
+    "p1": [
+      {
+        "slot": "Pre-training · 6 AM",
+        "desc": "1 glass of plain water + 1 med banana OR 1 whole fruit (Apple/Orange/Chickoo/Guava)"
+      },
+      {
+        "slot": "During training",
+        "desc": "No specific instruction (rest/light day)"
+      },
+      {
+        "slot": "Breakfast · 8:30 AM",
+        "desc": "2 bread toast + 1 scoop whey protein in 200 ml water + 30 g chickpeas (15 g raw)"
+      },
+      {
+        "slot": "Lunch · 12:30 PM",
+        "desc": "100 g raw salad + 2 jowar bhakri + 50 g low fat palak paneer + 50 g plain curd + 1 scoop samah powder"
+      },
+      {
+        "slot": "Evening snack · 4 PM",
+        "desc": "1 cup green tea + 1 vit-C rich fruit"
+      },
+      {
+        "slot": "Dinner · 7 PM",
+        "desc": "100 g sabzi/salad + 1 jowar bhakri + 70 g low fat palak paneer"
+      }
+    ],
+    "p2": [
+      {
+        "slot": "Sip — first half of day",
+        "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"
+      },
+      {
+        "slot": "Pre-training · 5:30–6 AM",
+        "desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During training 6–7 AM: Supply 6 salts (1 sachet in 600 ml)"
+      },
+      {
+        "slot": "Breakfast · 8:30 AM",
+        "desc": "3 bread toast + 4 egg whites (omelette/bhurji) + 200 ml toned milk + 1 scoop whey protein"
+      },
+      {
+        "slot": "Mid-morning · 10 AM",
+        "desc": "1 vit-C rich fruit + 4 egg whites"
+      },
+      {
+        "slot": "Lunch · 12:30 PM",
+        "desc": "100 g salad + 3 jowar bhakri + 100 g low fat palak paneer + 100 g plain curd"
+      },
+      {
+        "slot": "Evening · 4 PM",
+        "desc": "20 g roasted peanuts + ½ scoop whey in 200 ml water"
+      },
+      {
+        "slot": "Dinner · 7 PM",
+        "desc": "100 g sabzi/salad + 2 jowar bhakri + 150 g low fat palak paneer"
+      },
+      {
+        "slot": "Bedtime",
+        "desc": "200 ml toned milk + 2 pinches cinnamon (no sugar)"
+      }
+    ]
+  },
+  "Sat": {
+    "p1": [
+      {
+        "slot": "Pre-training · 6 AM",
+        "desc": "1 glass of plain water + 1 med banana OR 1 whole fruit (Apple/Orange/Chickoo/Guava)"
+      },
+      {
+        "slot": "During training",
+        "desc": "1 sachet Supply 6 salts in 500–600 ml water"
+      },
+      {
+        "slot": "Breakfast · 8:30 AM",
+        "desc": "1 scoop whey protein in 200 ml water + 30 g chickpeas (15 g raw)"
+      },
+      {
+        "slot": "Lunch · 12:30 PM",
+        "desc": "Tofu burrito wrap (2 whole wheat roti + 50 g tofu + 100 g veggies + 15 g salsa) + 150 ml chaas + 1 scoop samah powder"
+      },
+      {
+        "slot": "Evening snack · 4 PM",
+        "desc": "1 cup green tea + 1 vit-C rich fruit"
+      },
+      {
+        "slot": "Dinner · 7 PM",
+        "desc": "200 g shirataki noodles (100 g noodles + 100 g veggies) + 200 ml tomato soup + 100 g skyr protein yogurt"
+      }
+    ],
+    "p2": [
+      {
+        "slot": "Sip — first half of day",
+        "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"
+      },
+      {
+        "slot": "Pre-training · 5:30–6 AM",
+        "desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During training 6:30–8 AM: 300–500 ml plain water + Supply 6 salts (1 sachet in 500 ml)"
+      },
+      {
+        "slot": "Breakfast · 8:30 AM",
+        "desc": "400 ml oats protein smoothie + 30 g moong sprouts (15 g raw)"
+      },
+      {
+        "slot": "Mid-morning · 10 AM",
+        "desc": "1 vit-C rich fruit + 4 egg whites"
+      },
+      {
+        "slot": "Lunch · 12:30 PM",
+        "desc": "100 g salad + tofu burrito wrap (2 wheat roti + 100 g tofu + 20 g boiled rajma + 75 g veggies + 15 g salsa) + 200 ml chaas"
+      },
+      {
+        "slot": "Evening · 4 PM",
+        "desc": "20 g makhana + ½ scoop whey in 200 ml water"
+      },
+      {
+        "slot": "Dinner · 7 PM",
+        "desc": "250 g shirataki noodles (150 g noodles + 100 g veggies) + 150 g chicken stir fry + 200 ml tomato soup"
+      },
+      {
+        "slot": "Bedtime",
+        "desc": "200 ml toned milk + 2 pinches cinnamon (no sugar)"
+      }
+    ]
+  },
+  "Sun": {
+    "p1": [
+      {
+        "slot": "Pre-training · 6 AM",
+        "desc": "1 glass of plain water + 1 med banana OR 1 whole fruit (Apple/Orange/Chickoo/Guava)"
+      },
+      {
+        "slot": "During training",
+        "desc": "1 sachet Supply 6 salts in 500–600 ml water"
+      },
+      {
+        "slot": "Breakfast · 8:30 AM",
+        "desc": "1 scoop whey protein in 200 ml water + 30 g kala channa (15 g raw)"
+      },
+      {
+        "slot": "Lunch · 12:30 PM",
+        "desc": "100 g raw salad + 200 g vegetable khichdi (75 g rice + 75 g dal + 50 g veggies) + 100 g skyr protein yogurt + 1 scoop samah powder"
+      },
+      {
+        "slot": "Evening snack · 4 PM",
+        "desc": "1 cup green tea + 1 vit-C rich fruit"
+      },
+      {
+        "slot": "Dinner · 7 PM",
+        "desc": "⭐ Enjoyment meal"
+      }
+    ],
+    "p2": [
+      {
+        "slot": "Sip — first half of day",
+        "desc": "1 L lemon chia seeds water (1 big lemon + 1 tbsp chia seeds + 2 pinches salt)"
+      },
+      {
+        "slot": "Pre-training · 5:30–6 AM (long run)",
+        "desc": "1 fruit/banana OR 2–3 dry dates/figs + 200 ml black coffee | During run: Supply 6 salts (1 sachet in 500 ml) + energy gel with caffeine at 45 min + plain energy gel at 80 min"
+      },
+      {
+        "slot": "Breakfast · 8:30 AM",
+        "desc": "400 ml oats protein smoothie + 30 g boiled chickpeas (15 g raw)"
+      },
+      {
+        "slot": "Mid-morning · 10 AM",
+        "desc": "1 vit-C rich fruit + 4 egg whites"
+      },
+      {
+        "slot": "Lunch · 12:30 PM",
+        "desc": "100 g salad + 250 g veg khichdi (100 g rice + 100 g dal + 50 g veggies) OR 250 g chicken biryani (150 g rice + 100 g chicken curry) + 100 g cucumber raita"
+      },
+      {
+        "slot": "Evening · 4 PM",
+        "desc": "150 g yogurt bowl (100 g yogurt + ½ scoop whey + 1 whole fruit + 1 tsp chia seeds)"
+      },
+      {
+        "slot": "Dinner · 7 PM",
+        "desc": "⭐ Enjoyment meal"
+      },
+      {
+        "slot": "Bedtime",
+        "desc": "200 ml toned milk + 2 pinches cinnamon (no sugar)"
+      }
+    ]
+  }
+}

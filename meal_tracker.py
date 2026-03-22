@@ -359,34 +359,21 @@ def load_day_entries(date_str: str) -> dict:
         }
     return st.session_state[sk]
 
-def _write_entry_bg(doc_id: str, entry: dict, token: str, pid: str):
-    """Background thread — all credentials pre-fetched on main thread."""
-    try:
-        url  = (f"https://firestore.googleapis.com/v1/projects/{pid}"
-                f"/databases/(default)/documents/tracking/{doc_id}")
-        hdrs = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        requests.patch(url, headers=hdrs,
-                       json={"fields": {k: _to(v) for k, v in entry.items()}},
-                       timeout=10)
-    except Exception:
-        pass
 
 def update_entry(date_str: str, doc_id: str, entry: dict):
-    """Update session state instantly, fire Firestore write in background.
-    All st.secrets access happens on the main thread before thread spawn."""
+    """Update session state instantly + write to Firestore.
+    Status changes (done/skip) use background thread for speed.
+    Notes/photos use synchronous write for reliability."""
     sk = f"_de_{date_str}"
     if sk not in st.session_state:
         st.session_state[sk] = {}
     st.session_state[sk][doc_id] = dict(entry)
     load_all_tracking.clear()
+    # Always write synchronously — ensures notes/photos persist
     try:
-        token = get_token()
-        pid   = st.secrets["firebase_credentials"]["project_id"]
+        fs_set("tracking", doc_id, entry)
     except Exception:
-        return  # If we can't get creds, skip background write (already in session state)
-    threading.Thread(target=_write_entry_bg,
-                     args=(doc_id, dict(entry), token, pid),
-                     daemon=True).start()
+        pass
 
 def bust_tracking(date_str: str):
     sk = f"_de_{date_str}"
@@ -503,8 +490,11 @@ def meal_card_crud(
         slot      = meal.get("slot", "")
         plan_desc = meal.get("desc", "")
 
-    entry     = dict(day_entries.get(tk(d, person, idx),
-                     {"status": "pending", "comment": "", "image_url": "", "planned_desc": ""}))
+    # Always read entry live from session state — not the stale passed-in dict
+    _sk    = f"_de_{d.isoformat()}"
+    _tk    = tk(d, person, idx)
+    _store = st.session_state.get(_sk, {})
+    entry  = dict(_store.get(_tk, {"status": "pending", "comment": "", "image_url": "", "planned_desc": ""}))
     status    = entry.get("status", "pending")
     comment   = entry.get("comment", "")
     image_url = entry.get("image_url", "")
@@ -533,19 +523,21 @@ def meal_card_crud(
         f'</div></div>', unsafe_allow_html=True)
 
     if image_url:
-        # Thumbnail row with expand toggle
         img_open_key = f"img_open_{uid}"
-        thumb_col, expand_col = st.columns([4, 1])
-        with thumb_col:
-            st.image(image_url, width=90)
-        with expand_col:
-            expand_label = "🔍 Close" if st.session_state.get(img_open_key) else "🔍 View"
-            if st.button(expand_label, key=f"imgbtn_{uid}", use_container_width=True):
+        # Thumbnail always visible; tap View to expand
+        t_col, e_col = st.columns([3, 1])
+        with t_col:
+            st.image(image_url, width=80)
+        with e_col:
+            expand_label = "▲ Close" if st.session_state.get(img_open_key) else "🔍 View"
+            if st.button(expand_label, key=f"imgbtn_{uid}", use_container_width=True,
+                         help="Toggle full view"):
                 st.session_state[img_open_key] = not st.session_state.get(img_open_key, False)
+                st.rerun(scope="fragment")
         if st.session_state.get(img_open_key):
             st.image(image_url, use_container_width=True)
 
-    if comment and not is_noting:
+    if comment:
         st.markdown(f'<div class="nt-note">💬 {comment}</div>', unsafe_allow_html=True)
 
     # ── Action rows ────────────────────────────────────────
@@ -612,11 +604,23 @@ def meal_card_crud(
                 st.session_state[edit_key] = not is_editing
     # ── Note / photo panel ─────────────────────────────────
     if is_noting and not is_future:
-        nc = st.text_area("Note", value=comment, key=f"ta_{uid}",
+        # Always re-seed draft from live entry when panel opens
+        _note_draft_key = f"note_draft_{uid}"
+        # Seed fresh from saved comment each time panel opens
+        # (allows seeing latest saved note if panel was closed and re-opened)
+        if _note_draft_key not in st.session_state:
+            st.session_state[_note_draft_key] = comment
+            st.session_state.pop(f"ta_{uid}", None)  # also clear widget cache
+        def _sync_note(): st.session_state[_note_draft_key] = st.session_state.get(f"ta_{uid}", "")
+        nc = st.text_area("Note",
+                          value=st.session_state[_note_draft_key],
+                          key=f"ta_{uid}",
                           placeholder="Add a note, substitution, or observation…",
-                          label_visibility="collapsed", height=72)
+                          label_visibility="collapsed",
+                          height=72,
+                          on_change=_sync_note)
         up = st.file_uploader("Attach a photo", type=["jpg","jpeg","png","heic"],
-                              key=f"slot_{uid}", label_visibility="collapsed")
+                              key=f"photo_{uid}", label_visibility="collapsed")
         cs, cr = st.columns(2)
         with cs:
             if st.button("Save note", key=f"sv_{uid}", use_container_width=True):
@@ -632,6 +636,9 @@ def meal_card_crud(
                         st.stop()
                 update_entry(d.isoformat(), tk(d, person, idx), entry)
                 st.session_state["active_note"] = None
+                # Clear draft and widget state so panel re-seeds fresh on next open
+                st.session_state.pop(f"note_draft_{uid}", None)
+                st.session_state.pop(f"ta_{uid}", None)
                 st.rerun(scope="fragment")
         with cr:
             if image_url and st.button("Remove photo", key=f"rm_{uid}", use_container_width=True):

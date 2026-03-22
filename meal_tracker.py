@@ -528,6 +528,9 @@ def meal_card_crud(
     status    = entry.get("status", "pending")
     comment   = entry.get("comment", "")
     image_url = entry.get("image_url", "")
+    # DEBUG — remove after fixing
+    if comment or image_url or entry.get("custom_desc"):
+        st.caption(f"🔍 DEBUG entry keys: {list(entry.keys())} | comment={repr(comment[:20] if comment else '')} | img={bool(image_url)}")
 
     # Per-date overrides from Tracker inline edit (custom_slot/custom_desc in tracking entry)
     if entry.get("custom_slot"): slot      = entry["custom_slot"]
@@ -657,7 +660,9 @@ def meal_card_crud(
         cs, cr = st.columns(2)
         with cs:
             if st.button("Save note", key=f"sv_{uid}", use_container_width=True):
-                entry["comment"] = nc
+                # Read from widget state directly — most reliable at button-press time
+                final_comment = st.session_state.get(f"ta_{uid}", nc) or nc
+                entry["comment"] = final_comment
                 if up:
                     with st.spinner("Uploading photo…"):
                         url = upload_photo(up.read(), up.name)
@@ -667,6 +672,11 @@ def meal_card_crud(
                         st.error("Upload failed — please try again.")
                         st.stop()
                 update_entry(d.isoformat(), tk(d, person, idx), entry)
+                # Force entry into session state immediately so pill renders on rerun
+                _sk_now = f"_de_{d.isoformat()}"
+                if _sk_now not in st.session_state:
+                    st.session_state[_sk_now] = {}
+                st.session_state[_sk_now][tk(d, person, idx)] = dict(entry)
                 st.session_state["active_note"] = None
                 # Clear draft and widget state so panel re-seeds fresh on next open
                 st.session_state.pop(f"note_draft_{uid}", None)

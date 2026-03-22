@@ -635,16 +635,16 @@ def meal_card_crud(
         if image_url and slot_matches:
             img_open_key = f"img_open_{uid}"
             is_open = st.session_state.get(img_open_key, False)
-            ic1, ic2 = st.columns([1, 4])
-            with ic1:
-                st.image(image_url, width=64)
-            with ic2:
-                if st.button("▲ Hide" if is_open else "🔍 Full view",
-                             key=f"imgbtn_{uid}", use_container_width=True):
+            # Thumbnail — tap it to toggle full size
+            tc1, tc2 = st.columns([1, 6])
+            with tc1:
+                if st.button("🖼", key=f"imgbtn_{uid}", use_container_width=True,
+                             help="Tap to expand/collapse photo"):
                     st.session_state[img_open_key] = not is_open
                     st.rerun(scope="fragment")
-            if is_open:
-                st.image(image_url, use_container_width=True)
+            with tc2:
+                st.image(image_url, width=72 if not is_open else None,
+                         use_container_width=is_open)
 
     # ── Action rows ────────────────────────────────────────
     if not is_future:

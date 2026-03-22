@@ -902,8 +902,16 @@ def render_person_meals(d: date, person: str, is_future: bool, plan_version: int
     to re-execute the fragment body (not serve a cached render).
     """
     day_name = DAYS[d.weekday()]
-    meals    = load_day_plan(day_name, person, d.isoformat())
-    day_ent  = load_day_entries(d.isoformat())
+    # Show spinner while fetching from Firestore (only on first load per date)
+    _plan_cached  = f"_plan_{day_name}_{person}" in st.session_state
+    _entry_cached = f"_de_{d.isoformat()}" in st.session_state
+    if not _plan_cached or not _entry_cached:
+        with st.spinner("Loading meals…"):
+            meals   = load_day_plan(day_name, person, d.isoformat())
+            day_ent = load_day_entries(d.isoformat())
+    else:
+        meals   = load_day_plan(day_name, person, d.isoformat())
+        day_ent = load_day_entries(d.isoformat())
 
     st.markdown(person_header(person), unsafe_allow_html=True)
     for i, meal in enumerate(meals):
@@ -934,8 +942,9 @@ def page_tracker():
     d = st.session_state.sel_date
 
     with st.expander("📅  Monthly overview", expanded=False):
-        y, m  = st.session_state.cal_year, st.session_state.cal_month
-        all_t = load_all_tracking()
+        y, m = st.session_state.cal_year, st.session_state.cal_month
+        with st.spinner("Loading calendar…"):
+            all_t = load_all_tracking()
         nc1, nc2, nc3 = st.columns([1, 4, 1])
         with nc1:
             if st.button("◀", key="cp", use_container_width=True):
@@ -1307,15 +1316,19 @@ def page_edit_plan():
 def main():
     if not check_password(): return
 
-    today_str = TODAY.strftime("%a, %d %b %Y")
+    today_str  = TODAY.strftime("%a, %d %b %Y")
+    plan_start = date(2026, 3, 23)
+    plan_day   = max(1, (TODAY - plan_start).days + 1)
+    plan_week  = (plan_day - 1) // 7 + 1
+    plan_str   = f"Day {plan_day} · Week {plan_week}" if TODAY >= plan_start else "Starts 23 Mar 2026"
     st.markdown(
         f'<div class="nt-header">'
-        f'<div class="nt-brand"><div class="nt-logo">\U0001f33f</div>'
+        f'<div class="nt-brand"><div class="nt-logo">🌿</div>'
         f'<div><div class="nt-brand-name">NutriTrack</div>'
         f'<div class="nt-brand-sub">6-month nutrition programme</div></div></div>'
         f'<div class="nt-header-meta">'
         f'<div class="nt-header-date">{today_str}</div>'
-        f'<div class="nt-header-plan">Personalised plan</div>'
+        f'<div class="nt-header-plan">{plan_str}</div>'
         f'</div></div>', unsafe_allow_html=True)
 
     page = st.radio("Navigation", ["\U0001f4c5  Tracker", "\U0001f4cf  Measurements", "\u270f\ufe0f  Edit plan"],

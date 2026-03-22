@@ -608,9 +608,11 @@ def meal_card_crud(
         f'<div>{badge_html(status)}</div>'
         f'</div></div>', unsafe_allow_html=True)
 
-    # ── Note + photo — only show if slot matches (prevents index-drift) ─────
-    # entry["slot_key"] anchors the note to a specific slot name
+    # ── Note + photo display ─────────────────────────────────
     slot_matches = (not entry.get("slot_key")) or entry.get("slot_key") == slot
+    # DEBUG: always show entry state
+    if comment or image_url or entry.get("slot_key"):
+        st.caption(f"DEBUG: comment={repr(comment[:30] if comment else '')} | img={bool(image_url)} | slot_key={repr(entry.get('slot_key','')[:20] if entry.get('slot_key') else '')} | slot={repr(slot[:20])} | match={slot_matches}")
     if (comment or image_url) and slot_matches:
         nd1, nd2 = st.columns([6, 1])
         with nd1:
@@ -752,7 +754,9 @@ def meal_card_crud(
         b1, b2, b3 = st.columns(3)
         with b1:
             if st.button("💾 Save", key=f"sv_{uid}", use_container_width=True):
-                entry["comment"]   = st.session_state.get(_ta_key, "").strip()
+                _typed = st.session_state.get(_ta_key, "").strip()
+                st.info(f"DEBUG SAVE: typed={repr(_typed[:40])} | uid={uid} | ph_key={bool(st.session_state.get(_ph_key))}")
+                entry["comment"]   = _typed
                 entry["slot_key"]  = slot  # anchor to this exact slot
                 # Try cached bytes first (set by on_change), fallback to widget directly
                 cached = st.session_state.pop(_ph_key, None)

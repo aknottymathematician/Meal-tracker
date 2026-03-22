@@ -287,39 +287,54 @@ def upload_photo(fb, fn) -> str:
 def _default_plan(day: str, person: str) -> list:
     return [{"slot": m["slot"], "desc": m["desc"]} for m in DEFAULT_MEALS[day][person]]
 
-def load_day_plan(day: str, person: str) -> list:
-    """Session-state backed — instant on rerun, loads Firestore once per session."""
+def _fetch_plan_from_fs(fs_key: str):
+    doc = fs_get("meal_plans", fs_key)
+    if doc and doc.get("meals"):
+        return [{"slot": m.get("slot",""), "desc": m.get("desc","")} for m in doc["meals"]]
+    return None
+
+def load_day_plan(day: str, person: str, date_iso: str = None) -> list:
+    """Two-level lookup: date-specific override > weekday plan > default."""
+    # Level 1: date-specific override (tracker inline edit)
+    if date_iso:
+        dsk = f"_plan_{date_iso}_{person}"
+        if dsk not in st.session_state:
+            st.session_state[dsk] = _fetch_plan_from_fs(f"{date_iso}_{person}")
+        if st.session_state[dsk] is not None:
+            return st.session_state[dsk]
+    # Level 2: weekday plan (edit plan page)
     sk = f"_plan_{day}_{person}"
     if sk not in st.session_state:
-        doc = fs_get("meal_plans", f"{day}_{person}")
-        if doc and doc.get("meals"):
-            st.session_state[sk] = [
-                {"slot": m.get("slot", ""), "desc": m.get("desc", "")}
-                for m in doc["meals"]
-            ]
-        else:
-            st.session_state[sk] = _default_plan(day, person)
+        fetched = _fetch_plan_from_fs(f"{day}_{person}")
+        st.session_state[sk] = fetched if fetched is not None else _default_plan(day, person)
     return st.session_state[sk]
 
-def save_day_plan(day: str, person: str, meals: list):
-    """
-    Update session state instantly AND write to Firestore synchronously.
-    Also clears planned_desc in today's tracking entries so disp_desc refreshes.
-    """
+def save_weekday_plan(day: str, person: str, meals: list):
+    """Edit Plan: weekday-level — applies every occurrence of this weekday going forward."""
     sk = f"_plan_{day}_{person}"
     frozen = [{"slot": m["slot"], "desc": m["desc"]} for m in meals]
     st.session_state[sk] = frozen
     st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
-    # If editing today's plan, clear planned_desc snapshots in session-state
-    # tracking entries so the corrected description shows immediately.
-    today_day = DAYS[TODAY.weekday()]
-    if day == today_day:
+    if day == DAYS[TODAY.weekday()]:
         te_sk = f"_de_{TODAY.isoformat()}"
         if te_sk in st.session_state:
-            for key, entry in st.session_state[te_sk].items():
-                if f"_{person}_" in key and "planned_desc" in entry:
+            for entry in st.session_state[te_sk].values():
+                if isinstance(entry, dict):
                     entry["planned_desc"] = ""
     fs_set("meal_plans", f"{day}_{person}", {"meals": frozen})
+
+def save_date_plan(date_iso: str, person: str, meals: list):
+    """Tracker: date-specific — applies ONLY to this one date."""
+    dsk = f"_plan_{date_iso}_{person}"
+    frozen = [{"slot": m["slot"], "desc": m["desc"]} for m in meals]
+    st.session_state[dsk] = frozen
+    st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
+    te_sk = f"_de_{date_iso}"
+    if te_sk in st.session_state:
+        for entry in st.session_state[te_sk].values():
+            if isinstance(entry, dict):
+                entry["planned_desc"] = ""
+    fs_set("meal_plans", f"{date_iso}_{person}", {"meals": frozen})
 
 def reset_day_plan(day: str, person: str):
     sk = f"_plan_{day}_{person}"
@@ -328,15 +343,19 @@ def reset_day_plan(day: str, person: str):
     st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
 
 def reset_all_plans(person: str):
-    """Delete Firestore docs, write defaults back to session state immediately."""
     for day in DAYS:
         sk = f"_plan_{day}_{person}"
-        # Delete from Firestore
         fs_del("meal_plans", f"{day}_{person}")
-        # Immediately seed session state with hardcoded defaults
-        # so the next render never hits the (possibly slow) Firestore read
         st.session_state[sk] = _default_plan(day, person)
     st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
+
+# Alias so reorder/add in tracker still works (saves date-specific)
+def save_day_plan(day_or_date: str, person: str, meals: list):
+    """Router: if key looks like a date (contains '-'), save date-specific; else weekday."""
+    if len(day_or_date) > 3:  # date ISO is longer than day abbreviation
+        save_date_plan(day_or_date, person, meals)
+    else:
+        save_weekday_plan(day_or_date, person, meals)
 
 
 # ── Tracking ───────────────────────────────────────────────
@@ -380,6 +399,12 @@ def bust_tracking(date_str: str):
     if sk in st.session_state:
         del st.session_state[sk]
     load_all_tracking.clear()
+
+def bust_tracking_date(date_str: str):
+    """Bust session cache for a specific date so next read re-fetches from Firestore."""
+    sk = f"_de_{date_str}"
+    if sk in st.session_state:
+        del st.session_state[sk]
 
 def day_pct(d: date, all_t: dict) -> float:
     day_name = DAYS[d.weekday()]
@@ -481,14 +506,17 @@ def meal_card_crud(
     - Delete
     """
     day_name  = DAYS[d.weekday()]
-    # Always read live slot/desc from session-state-backed plan
-    _live_plan = load_day_plan(DAYS[d.weekday()], person)
+    # Always read slot/desc from live weekly plan template
+    _live_plan = load_day_plan(DAYS[d.weekday()], person, d.isoformat())
     if idx < len(_live_plan):
         slot      = _live_plan[idx]["slot"]
         plan_desc = _live_plan[idx]["desc"]
     else:
         slot      = meal.get("slot", "")
         plan_desc = meal.get("desc", "")
+    # Per-date overrides from Tracker inline edit
+    if entry.get("custom_slot"):  slot      = entry["custom_slot"]
+    if entry.get("custom_desc"):  plan_desc = entry["custom_desc"]
 
     # Always read entry live from session state — not the stale passed-in dict
     _sk    = f"_de_{d.isoformat()}"
@@ -498,9 +526,11 @@ def meal_card_crud(
     status    = entry.get("status", "pending")
     comment   = entry.get("comment", "")
     image_url = entry.get("image_url", "")
-    # Use planned_desc snapshot only for past days (preserves history).
-    # For today or future always show the live plan so edits are instant.
-    disp_desc = (entry.get("planned_desc") or plan_desc) if d < TODAY else plan_desc
+    # Description hierarchy:
+    #   1. custom_desc in tracking entry  → user explicitly edited this date in Tracker
+    #   2. live plan (load_day_plan)       → Edit Plan template for this weekday
+    # planned_desc snapshots are ignored — Edit Plan changes always reflect immediately.
+    disp_desc = entry.get("custom_desc") or plan_desc
 
     uid       = f"{d.isoformat()}_{person}_{idx}"
     edit_key  = f"edit_{uid}"
@@ -548,14 +578,12 @@ def meal_card_crud(
             done_lbl = "✅ Done" if status != "done" else "↩ Undo"
             if st.button(done_lbl, key=f"done_{uid}", use_container_width=True):
                 entry["status"] = "done" if status != "done" else "pending"
-                if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
                 update_entry(d.isoformat(), tk(d, person, idx), entry)
                 st.rerun(scope="fragment")
         with a2:
             skip_lbl = "⏭ Skip" if status != "skipped" else "↩ Undo"
             if st.button(skip_lbl, key=f"skip_{uid}", use_container_width=True):
                 entry["status"] = "skipped" if status != "skipped" else "pending"
-                if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
                 update_entry(d.isoformat(), tk(d, person, idx), entry)
                 st.rerun(scope="fragment")
         with a3:
@@ -566,7 +594,7 @@ def meal_card_crud(
             if idx > 0:
                 if st.button("▲", key=f"mup_{uid}", use_container_width=True):
                     meals[idx], meals[idx-1] = meals[idx-1], meals[idx]
-                    save_day_plan(day_name, person, meals)
+                    save_date_plan(d.isoformat(), person, meals)
                     st.rerun(scope="fragment")
             else:
                 st.empty()
@@ -574,7 +602,7 @@ def meal_card_crud(
             if idx < len(meals) - 1:
                 if st.button("▼", key=f"mdn_{uid}", use_container_width=True):
                     meals[idx], meals[idx+1] = meals[idx+1], meals[idx]
-                    save_day_plan(day_name, person, meals)
+                    save_date_plan(d.isoformat(), person, meals)
                     st.rerun(scope="fragment")
             else:
                 st.empty()
@@ -591,13 +619,13 @@ def meal_card_crud(
             if idx > 0:
                 if st.button("▲", key=f"mup_f_{uid}", use_container_width=True):
                     meals[idx], meals[idx-1] = meals[idx-1], meals[idx]
-                    save_day_plan(day_name, person, meals)
+                    save_date_plan(d.isoformat(), person, meals)
                     st.rerun(scope="fragment")
         with fi2:
             if idx < len(meals) - 1:
                 if st.button("▼", key=f"mdn_f_{uid}", use_container_width=True):
                     meals[idx], meals[idx+1] = meals[idx+1], meals[idx]
-                    save_day_plan(day_name, person, meals)
+                    save_date_plan(d.isoformat(), person, meals)
                     st.rerun(scope="fragment")
         with fi3:
             if st.button("⚙️", key=f"edt_f_{uid}", use_container_width=True):
@@ -625,7 +653,6 @@ def meal_card_crud(
         with cs:
             if st.button("Save note", key=f"sv_{uid}", use_container_width=True):
                 entry["comment"] = nc
-                if not entry.get("planned_desc"): entry["planned_desc"] = plan_desc
                 if up:
                     with st.spinner("Uploading photo…"):
                         url = upload_photo(up.read(), up.name)
@@ -653,9 +680,10 @@ def meal_card_crud(
         draft_slot_key = f"draft_slot_{uid}"
         draft_desc_key = f"draft_desc_{uid}"
         if draft_slot_key not in st.session_state:
-            st.session_state[draft_slot_key] = slot
+            # Seed from custom override if present, else live plan
+            st.session_state[draft_slot_key] = entry.get("custom_slot") or slot
         if draft_desc_key not in st.session_state:
-            st.session_state[draft_desc_key] = plan_desc
+            st.session_state[draft_desc_key] = entry.get("custom_desc") or plan_desc
 
         st.markdown('<div style="background:rgba(13,148,136,.04);border:1px solid var(--border-md);'
                     'border-radius:var(--r-md);padding:12px;margin-top:6px">', unsafe_allow_html=True)
@@ -686,10 +714,12 @@ def meal_card_crud(
                 new_slot = st.session_state.get(draft_slot_key, slot).strip() or slot
                 new_desc = st.session_state.get(draft_desc_key, plan_desc).strip() or plan_desc
                 # Update the live plan
-                live = load_day_plan(day_name, person)
-                if idx < len(live):
-                    live[idx] = {"slot": new_slot, "desc": new_desc}
-                    save_day_plan(day_name, person, live)
+                # Tracker inline edit = date-specific override stored in tracking entry
+                # Does NOT change the weekly plan template
+                entry["custom_desc"]  = new_desc
+                entry["custom_slot"]  = new_slot
+                update_entry(d.isoformat(), tk(d, person, idx), entry)
+                bust_tracking_date(d.isoformat())
                 # Clear draft + close panel
                 st.session_state.pop(draft_slot_key, None)
                 st.session_state.pop(draft_desc_key, None)
@@ -718,7 +748,7 @@ def meal_card_crud(
         with dc1:
             if st.button("Yes, delete", key=f"dyes_{uid}", use_container_width=True):
                 meals.pop(idx)
-                save_day_plan(day_name, person, meals)
+                save_date_plan(d.isoformat(), person, meals)
                 st.session_state.pop(del_key, None)
                 st.session_state.pop(edit_key, None)
                 st.rerun(scope="fragment")
@@ -813,7 +843,7 @@ def add_meal_form(d: date, person: str, meals: list):
             if st.button("Add meal", key=f"amc_{ak}", use_container_width=True):
                 if ns.strip() and nd.strip():
                     meals.append({"slot": ns.strip(), "desc": nd.strip()})
-                    save_day_plan(day_name, person, meals)
+                    save_date_plan(d.isoformat(), person, meals)
                     st.session_state[ak] = False
                     st.rerun(scope="fragment")
                 else:
@@ -834,7 +864,7 @@ def render_person_meals(d: date, person: str, is_future: bool, plan_version: int
     to re-execute the fragment body (not serve a cached render).
     """
     day_name = DAYS[d.weekday()]
-    meals    = load_day_plan(day_name, person)
+    meals    = load_day_plan(day_name, person, d.isoformat())
     day_ent  = load_day_entries(d.isoformat())
 
     st.markdown(person_header(person), unsafe_allow_html=True)
@@ -1189,7 +1219,7 @@ def page_edit_plan():
                             new_slot = st.session_state.get(dsk, meal["slot"]).strip() or meal["slot"]
                             new_desc = st.session_state.get(ddk, meal["desc"]).strip() or meal["desc"]
                             meals[i] = {"slot": new_slot, "desc": new_desc}
-                            save_day_plan(day, person, meals)
+                            save_weekday_plan(day, person, meals)
                             for k in [dsk, ddk, f"es_{pk}", f"ed_{pk}"]:
                                 st.session_state.pop(k, None)
                             st.success("Saved."); st.rerun()
@@ -1197,12 +1227,12 @@ def page_edit_plan():
                         if st.button("Move up", key=f"mup_{pk}", use_container_width=True):
                             if i > 0:
                                 meals[i], meals[i-1] = meals[i-1], meals[i]
-                                save_day_plan(day, person, meals)
+                                save_weekday_plan(day, person, meals)
                                 st.rerun()
                     with cc3:
                         if st.button("Delete", key=f"del_{pk}", use_container_width=True):
                             meals.pop(i)
-                            save_day_plan(day, person, meals)
+                            save_weekday_plan(day, person, meals)
                             st.success("Meal removed."); st.rerun()
 
             st.markdown("<div style='margin-top:8px'></div>", unsafe_allow_html=True)
@@ -1222,7 +1252,7 @@ def page_edit_plan():
                     if st.button("Add", key=f"namc_{nak}", use_container_width=True):
                         if nns.strip() and nnd.strip():
                             meals.append({"slot": nns.strip(), "desc": nnd.strip()})
-                            save_day_plan(day, person, meals)
+                            save_weekday_plan(day, person, meals)
                             st.session_state[nak] = False
                             st.rerun()
                         else:

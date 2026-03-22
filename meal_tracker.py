@@ -639,59 +639,77 @@ def meal_card_crud(
                 st.session_state[edit_key] = not is_editing
     # ── Note / photo panel ─────────────────────────────────
     if is_noting and not is_future:
-        with st.form(key=f"note_form_{uid}", clear_on_submit=True):
-            note_val = st.text_area(
-                "Note",
-                value=comment,
-                placeholder="Add a note, substitution, or observation…",
-                label_visibility="collapsed",
-                height=80,
-            )
-            uploaded = st.file_uploader(
-                "Photo (optional)",
-                type=["jpg", "jpeg", "png", "heic"],
-                label_visibility="collapsed",
-            )
-            fc1, fc2, fc3 = st.columns(3)
-            with fc1:
-                submitted = st.form_submit_button("Save", use_container_width=True)
-            with fc2:
-                cancelled = st.form_submit_button("Cancel", use_container_width=True)
-            with fc3:
-                if image_url:
-                    remove = st.form_submit_button("Remove photo", use_container_width=True)
-                else:
-                    remove = False
+        _ta_key = f"note_text_{uid}"
+        _ph_key = f"note_photo_{uid}"   # stores (bytes, name) tuple
 
-        if submitted:
-            entry["comment"] = note_val.strip()
-            if uploaded:
-                with st.spinner("Uploading…"):
-                    url = upload_photo(uploaded.read(), uploaded.name)
-                if url:
-                    entry["image_url"] = url
-            _sk_now = f"_de_{d.isoformat()}"
-            if _sk_now not in st.session_state:
-                st.session_state[_sk_now] = {}
-            st.session_state[_sk_now][tk(d, person, idx)] = dict(entry)
-            fs_set("tracking", tk(d, person, idx), entry)
-            load_all_tracking.clear()
-            st.session_state["active_note"] = None
-            st.rerun(scope="fragment")
+        # Seed text area once when panel opens
+        if _ta_key not in st.session_state:
+            st.session_state[_ta_key] = comment
 
-        if cancelled:
-            st.session_state["active_note"] = None
-            st.rerun(scope="fragment")
+        new_text = st.text_area(
+            "Note",
+            key=_ta_key,
+            placeholder="Add a note, substitution, or observation…",
+            label_visibility="collapsed",
+            height=80,
+        )
 
-        if remove:
-            entry["image_url"] = ""
-            _sk_now = f"_de_{d.isoformat()}"
-            if _sk_now not in st.session_state:
-                st.session_state[_sk_now] = {}
-            st.session_state[_sk_now][tk(d, person, idx)] = dict(entry)
-            fs_set("tracking", tk(d, person, idx), entry)
-            load_all_tracking.clear()
-            st.rerun(scope="fragment")
+        # File uploader — immediately cache bytes on selection
+        def _store_photo(_pk=_ph_key, _uk=f"uf_{uid}"):
+            f = st.session_state.get(_uk)
+            if f is not None:
+                st.session_state[_pk] = (f.read(), f.name)
+
+        st.file_uploader(
+            "Attach photo (optional)",
+            type=["jpg", "jpeg", "png", "heic"],
+            key=f"uf_{uid}",
+            label_visibility="collapsed",
+            on_change=_store_photo,
+        )
+        if st.session_state.get(_ph_key):
+            st.caption("📎 Photo ready")
+
+        b1, b2, b3 = st.columns(3)
+        with b1:
+            if st.button("💾 Save", key=f"sv_{uid}", use_container_width=True):
+                entry["comment"] = st.session_state.get(_ta_key, "").strip()
+                cached = st.session_state.pop(_ph_key, None)
+                if cached:
+                    with st.spinner("Uploading…"):
+                        url = upload_photo(cached[0], cached[1])
+                    if url:
+                        entry["image_url"] = url
+                # Write to session state immediately
+                _sk2 = f"_de_{d.isoformat()}"
+                if _sk2 not in st.session_state:
+                    st.session_state[_sk2] = {}
+                st.session_state[_sk2][tk(d, person, idx)] = dict(entry)
+                # Write to Firestore synchronously
+                fs_set("tracking", tk(d, person, idx), entry)
+                load_all_tracking.clear()
+                # Clean up panel state
+                st.session_state.pop(_ta_key, None)
+                st.session_state["active_note"] = None
+                # Full rerun — guarantees fresh render with new data
+                st.rerun()
+        with b2:
+            if st.button("✕ Cancel", key=f"cn_{uid}", use_container_width=True):
+                st.session_state.pop(_ta_key, None)
+                st.session_state.pop(_ph_key, None)
+                st.session_state["active_note"] = None
+                st.rerun(scope="fragment")
+        with b3:
+            if image_url:
+                if st.button("🗑 Photo", key=f"rm_{uid}", use_container_width=True):
+                    entry["image_url"] = ""
+                    _sk2 = f"_de_{d.isoformat()}"
+                    if _sk2 not in st.session_state:
+                        st.session_state[_sk2] = {}
+                    st.session_state[_sk2][tk(d, person, idx)] = dict(entry)
+                    fs_set("tracking", tk(d, person, idx), entry)
+                    load_all_tracking.clear()
+                    st.rerun()
 
     # ── Inline edit panel ──────────────────────────────────
     if is_editing:

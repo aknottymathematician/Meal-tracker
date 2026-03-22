@@ -514,11 +514,7 @@ def meal_card_crud(
     else:
         slot      = meal.get("slot", "")
         plan_desc = meal.get("desc", "")
-    # Per-date overrides from Tracker inline edit
-    if entry.get("custom_slot"):  slot      = entry["custom_slot"]
-    if entry.get("custom_desc"):  plan_desc = entry["custom_desc"]
-
-    # Always read entry live from session state — not the stale passed-in dict
+    # Read entry live from session state FIRST — needed for per-date overrides below
     _sk    = f"_de_{d.isoformat()}"
     _tk    = tk(d, person, idx)
     _store = st.session_state.get(_sk, {})
@@ -526,10 +522,12 @@ def meal_card_crud(
     status    = entry.get("status", "pending")
     comment   = entry.get("comment", "")
     image_url = entry.get("image_url", "")
-    # Description hierarchy:
-    #   1. custom_desc in tracking entry  → user explicitly edited this date in Tracker
-    #   2. live plan (load_day_plan)       → Edit Plan template for this weekday
-    # planned_desc snapshots are ignored — Edit Plan changes always reflect immediately.
+
+    # Per-date overrides from Tracker inline edit (custom_slot/custom_desc in tracking entry)
+    if entry.get("custom_slot"): slot      = entry["custom_slot"]
+    if entry.get("custom_desc"): plan_desc = entry["custom_desc"]
+
+    # Display description: custom_desc (tracker override) → live plan desc
     disp_desc = entry.get("custom_desc") or plan_desc
 
     uid       = f"{d.isoformat()}_{person}_{idx}"

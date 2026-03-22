@@ -274,12 +274,28 @@ def fs_add(col, data):
 # ── Cloudinary ─────────────────────────────────────────────
 
 def upload_photo(fb, fn) -> str:
-    r = requests.post(
-        f"https://api.cloudinary.com/v1_1/{st.secrets['cloudinary_cloud_name']}/image/upload",
-        data={"upload_preset": st.secrets["cloudinary_upload_preset"]},
-        files={"file": (fn, fb)}, timeout=30,
-    )
-    return r.json().get("secure_url", "") if r.status_code == 200 else ""
+    """Upload bytes to Cloudinary. Returns secure_url or empty string."""
+    if not fb:
+        st.error("Photo upload failed: no file data received.")
+        return ""
+    try:
+        r = requests.post(
+            f"https://api.cloudinary.com/v1_1/{st.secrets['cloudinary_cloud_name']}/image/upload",
+            data={"upload_preset": st.secrets["cloudinary_upload_preset"]},
+            files={"file": (fn, fb)},
+            timeout=30,
+        )
+        if r.status_code == 200:
+            url = r.json().get("secure_url", "")
+            if not url:
+                st.error(f"Cloudinary returned no URL. Response: {r.text[:200]}")
+            return url
+        else:
+            st.error(f"Cloudinary upload failed ({r.status_code}): {r.text[:300]}")
+            return ""
+    except Exception as e:
+        st.error(f"Upload error: {e}")
+        return ""
 
 
 # ── Meal plan — dynamic, stored in Firestore ───────────────
@@ -715,7 +731,13 @@ def meal_card_crud(
         def _store_photo(_pk=_ph_key, _uk=f"uf_{uid}"):
             f = st.session_state.get(_uk)
             if f is not None:
-                st.session_state[_pk] = (f.read(), f.name)
+                try:
+                    f.seek(0)          # rewind before read
+                    data = f.read()
+                    if data:
+                        st.session_state[_pk] = (data, f.name)
+                except Exception:
+                    pass
 
         st.file_uploader(
             "Attach photo (optional)",
@@ -732,8 +754,18 @@ def meal_card_crud(
             if st.button("💾 Save", key=f"sv_{uid}", use_container_width=True):
                 entry["comment"]   = st.session_state.get(_ta_key, "").strip()
                 entry["slot_key"]  = slot  # anchor to this exact slot
+                # Try cached bytes first (set by on_change), fallback to widget directly
                 cached = st.session_state.pop(_ph_key, None)
-                if cached:
+                uf_widget = st.session_state.get(f"uf_{uid}")
+                if not cached and uf_widget is not None:
+                    try:
+                        uf_widget.seek(0)
+                        data = uf_widget.read()
+                        if data:
+                            cached = (data, uf_widget.name)
+                    except Exception:
+                        pass
+                if cached and cached[0]:
                     with st.spinner("Uploading…"):
                         url = upload_photo(cached[0], cached[1])
                     if url:

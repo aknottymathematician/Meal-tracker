@@ -614,6 +614,8 @@ def meal_card_crud(
                 st.session_state[_sk2][tk(d, person, idx)] = dict(entry)
                 fs_set("tracking", tk(d, person, idx), entry)
                 load_all_tracking.clear()
+                st.session_state["_note_version"] = st.session_state.get("_note_version", 0) + 1
+                st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
                 st.rerun(scope="fragment")
         if image_url and slot_matches:
             img_open_key = f"img_open_{uid}"
@@ -736,7 +738,7 @@ def meal_card_crud(
                         url = upload_photo(cached[0], cached[1])
                     if url:
                         entry["image_url"] = url
-                # Write to session state immediately
+                # Write directly to the session state tracking dict
                 _sk2 = f"_de_{d.isoformat()}"
                 if _sk2 not in st.session_state:
                     st.session_state[_sk2] = {}
@@ -744,11 +746,12 @@ def meal_card_crud(
                 # Write to Firestore synchronously
                 fs_set("tracking", tk(d, person, idx), entry)
                 load_all_tracking.clear()
-                # Clean up panel state
+                # Bump BOTH versions to guarantee fragment re-executes with fresh data
+                st.session_state["_note_version"] = st.session_state.get("_note_version", 0) + 1
+                st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
                 st.session_state.pop(_ta_key, None)
                 st.session_state["active_note"] = None
-                # Full rerun — guarantees fresh render with new data
-                st.rerun()
+                st.rerun(scope="fragment")
         with b2:
             if st.button("✕ Cancel", key=f"cn_{uid}", use_container_width=True):
                 st.session_state.pop(_ta_key, None)
@@ -956,7 +959,7 @@ def add_meal_form(d: date, person: str, meals: list):
 # ── Per-person full tab: stats + calendar + meals ─────────
 
 @st.fragment
-def render_person_tab(d: date, person: str, is_future: bool, plan_version: int = 0):
+def render_person_tab(d: date, person: str, is_future: bool, plan_version: int = 0, note_version: int = 0):
     day_name = DAYS[d.weekday()]
     _plan_cached  = f"_plan_{day_name}_{person}" in st.session_state
     _entry_cached = f"_de_{d.isoformat()}" in st.session_state
@@ -1051,10 +1054,11 @@ def page_tracker():
 
     t1, t2 = st.tabs(["👤  Person 1 · Veg", "🏃  Person 2 · Runner"])
 
+    nv = st.session_state.get("_note_version", 0)
     with t1:
-        render_person_tab(d, "p1", is_future, pv)
+        render_person_tab(d, "p1", is_future, pv, nv)
     with t2:
-        render_person_tab(d, "p2", is_future, pv)
+        render_person_tab(d, "p2", is_future, pv, nv)
 
 
 # ── Page: Measurements ─────────────────────────────────────

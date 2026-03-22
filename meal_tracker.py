@@ -315,12 +315,18 @@ def save_weekday_plan(day: str, person: str, meals: list):
     frozen = [{"slot": m["slot"], "desc": m["desc"]} for m in meals]
     st.session_state[sk] = frozen
     st.session_state["_plan_version"] = st.session_state.get("_plan_version", 0) + 1
+    # If editing today's weekday, also clear the date-specific plan cache
+    # so tracker re-evaluates and shows the new weekday plan immediately
     if day == DAYS[TODAY.weekday()]:
         te_sk = f"_de_{TODAY.isoformat()}"
         if te_sk in st.session_state:
             for entry in st.session_state[te_sk].values():
                 if isinstance(entry, dict):
                     entry["planned_desc"] = ""
+        # Clear date-specific plan override for today so weekday plan takes effect
+        dsk_today = f"_plan_{TODAY.isoformat()}_{person}"
+        if dsk_today in st.session_state:
+            del st.session_state[dsk_today]
     fs_set("meal_plans", f"{day}_{person}", {"meals": frozen})
 
 def save_date_plan(date_iso: str, person: str, meals: list):
@@ -637,7 +643,8 @@ def meal_card_crud(
         if _note_draft_key not in st.session_state:
             st.session_state[_note_draft_key] = comment
             st.session_state.pop(f"ta_{uid}", None)  # also clear widget cache
-        def _sync_note(): st.session_state[_note_draft_key] = st.session_state.get(f"ta_{uid}", "")
+        def _sync_note(_k=_note_draft_key, _wk=f"ta_{uid}"):
+            st.session_state[_k] = st.session_state.get(_wk, "")
         nc = st.text_area("Note",
                           value=st.session_state[_note_draft_key],
                           key=f"ta_{uid}",
@@ -687,10 +694,10 @@ def meal_card_crud(
                     'border-radius:var(--r-md);padding:12px;margin-top:6px">', unsafe_allow_html=True)
 
         # Use on_change to keep draft in sync without needing Save to read widget value
-        def _sync_slot():
-            st.session_state[draft_slot_key] = st.session_state[f"nes_{uid}"]
-        def _sync_desc():
-            st.session_state[draft_desc_key] = st.session_state[f"ned_{uid}"]
+        def _sync_slot(_k=draft_slot_key, _wk=f"nes_{uid}"):
+            st.session_state[_k] = st.session_state.get(_wk, "")
+        def _sync_desc(_k=draft_desc_key, _wk=f"ned_{uid}"):
+            st.session_state[_k] = st.session_state.get(_wk, "")
 
         st.text_input("Slot / time",
                       value=st.session_state[draft_slot_key],
@@ -1197,8 +1204,10 @@ def page_edit_plan():
                         st.session_state[dsk] = meal["slot"]
                     if ddk not in st.session_state:
                         st.session_state[ddk] = meal["desc"]
-                    def _ss(): st.session_state[dsk] = st.session_state[f"es_{pk}"]
-                    def _sd(): st.session_state[ddk] = st.session_state[f"ed_{pk}"]
+                    def _ss(_k=dsk, _wk=f"es_{pk}"):
+                        st.session_state[_k] = st.session_state.get(_wk, "")
+                    def _sd(_k=ddk, _wk=f"ed_{pk}"):
+                        st.session_state[_k] = st.session_state.get(_wk, "")
                     st.text_input("Slot / time",
                                   value=st.session_state[dsk],
                                   key=f"es_{pk}",

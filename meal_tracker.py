@@ -423,6 +423,41 @@ def day_pct(d: date, all_t: dict) -> float:
     )
     return done / total if total else 0
 
+def day_pct_person(d: date, all_t: dict, person: str) -> float:
+    """Completion % for one person only."""
+    day_name = DAYS[d.weekday()]
+    meals    = load_day_plan(day_name, person)
+    total    = len(meals)
+    done     = sum(
+        1 for i in range(total)
+        if all_t.get(tk(d, person, i), {}).get("status", "pending") in ("done", "skipped")
+    )
+    return done / total if total else 0
+
+
+def calendar_html_person(y: int, m: int, all_t: dict, sel: date, person: str) -> str:
+    """Calendar coloured by a single person's completion."""
+    fdow  = cal_lib.monthrange(y, m)[0]
+    ndays = cal_lib.monthrange(y, m)[1]
+    hdr   = "".join(f'<div class="nt-cal-hdr">{dn}</div>' for dn in ["Mo","Tu","We","Th","Fr","Sa","Su"])
+    cells = '<div class="nt-cal-empty"></div>' * fdow
+    for n in range(1, ndays + 1):
+        day   = date(y, m, n)
+        extra = (" nt-cal-today" if day == TODAY else "") + (" nt-cal-sel" if day == sel else "")
+        if day > TODAY:
+            css = "nt-cal-future"
+        else:
+            p   = day_pct_person(day, all_t, person)
+            css = "nt-cal-none" if p == 0 else "nt-cal-part" if p < 0.8 else "nt-cal-full"
+        cells += f'<div class="nt-cal-day {css}{extra}">{n}</div>'
+    legend = """<div class="nt-cal-legend">
+      <div class="nt-cal-leg"><div class="nt-cal-dot" style="background:var(--ocean-100);border:1px solid var(--ocean-400)"></div>Fully tracked</div>
+      <div class="nt-cal-leg"><div class="nt-cal-dot" style="background:rgba(224,242,254,.7);border:1px solid var(--sky-400)"></div>Partial</div>
+      <div class="nt-cal-leg"><div class="nt-cal-dot" style="background:rgba(255,255,255,.5);border:1px solid var(--border-md)"></div>Not started</div>
+    </div>"""
+    return (f'<div class="nt-cal-wrap">' +
+            f'<div class="nt-cal-grid">{hdr}{cells}</div>{legend}</div>')
+
 
 # ── Auth ───────────────────────────────────────────────────
 
@@ -894,92 +929,30 @@ def add_meal_form(d: date, person: str, meals: list):
 
 # ── Per-person meal list — fragment so note/edit reruns stay isolated ─────
 
+
+# ── Page: Tracker ──────────────────────────────────────────
+
+# ── Per-person full tab: stats + calendar + meals ─────────
+
 @st.fragment
-def render_person_meals(d: date, person: str, is_future: bool, plan_version: int = 0):
-    """
-    Fragment — partial reruns only.
-    plan_version changes whenever save_day_plan is called, forcing Streamlit
-    to re-execute the fragment body (not serve a cached render).
-    """
+def render_person_tab(d: date, person: str, is_future: bool, plan_version: int = 0):
     day_name = DAYS[d.weekday()]
-    # Show spinner while fetching from Firestore (only on first load per date)
     _plan_cached  = f"_plan_{day_name}_{person}" in st.session_state
     _entry_cached = f"_de_{d.isoformat()}" in st.session_state
     if not _plan_cached or not _entry_cached:
-        with st.spinner("Loading meals…"):
+        with st.spinner("Loading…"):
             meals   = load_day_plan(day_name, person, d.isoformat())
             day_ent = load_day_entries(d.isoformat())
     else:
         meals   = load_day_plan(day_name, person, d.isoformat())
         day_ent = load_day_entries(d.isoformat())
 
-    st.markdown(person_header(person), unsafe_allow_html=True)
-    for i, meal in enumerate(meals):
-        meal_card_crud(d, person, i, meal, meals, day_ent, is_future)
-    add_meal_form(d, person, meals)
-    if not is_future:
-        render_snacks(d, person)
-
-
-# ── Page: Tracker ──────────────────────────────────────────
-
-def page_tracker():
-    for k, v in [("sel_date", TODAY), ("cal_year", TODAY.year), ("cal_month", TODAY.month)]:
-        if k not in st.session_state: st.session_state[k] = v
-
-    sel = st.date_input("Select date", value=st.session_state.sel_date,
-                        min_value=date(2025, 1, 1), max_value=date(2026, 9, 30),
-                        label_visibility="collapsed")
-    if sel != st.session_state.sel_date:
-        # Bust the old date's session cache before navigating away,
-        # so returning to it always re-reads fresh data from Firestore.
-        old_sk = f"_de_{st.session_state.sel_date.isoformat()}"
-        if old_sk in st.session_state:
-            del st.session_state[old_sk]
-        st.session_state.update(sel_date=sel, cal_year=sel.year, cal_month=sel.month)
-        st.rerun()
-
-    d = st.session_state.sel_date
-
-    with st.expander("📅  Monthly overview", expanded=False):
-        y, m = st.session_state.cal_year, st.session_state.cal_month
-        with st.spinner("Loading calendar…"):
-            all_t = load_all_tracking()
-        nc1, nc2, nc3 = st.columns([1, 4, 1])
-        with nc1:
-            if st.button("◀", key="cp", use_container_width=True):
-                if m == 1: st.session_state.cal_year -= 1; st.session_state.cal_month = 12
-                else:      st.session_state.cal_month -= 1
-                st.rerun()
-        with nc2:
-            st.markdown(f'<div class="nt-cal-month" style="text-align:center;padding-top:6px">'
-                        f'{cal_lib.month_name[m]} {y}</div>', unsafe_allow_html=True)
-        with nc3:
-            if (y, m) < (TODAY.year, TODAY.month):
-                if st.button("▶", key="cn", use_container_width=True):
-                    if m == 12: st.session_state.cal_year += 1; st.session_state.cal_month = 1
-                    else:       st.session_state.cal_month += 1
-                    st.rerun()
-        st.markdown(calendar_html(y, m, all_t, d), unsafe_allow_html=True)
-
-    day_name  = DAYS[d.weekday()]
-    p1_meals  = load_day_plan(day_name, "p1")
-    p2_meals  = load_day_plan(day_name, "p2")
-    day_ent   = load_day_entries(d.isoformat())
-    is_future = d > TODAY
-
-    # Stats
-    done_n = sum(
-        1 for p, ms in [("p1", p1_meals), ("p2", p2_meals)]
-        for i in range(len(ms))
-        if day_ent.get(tk(d, p, i), {}).get("status", "pending") == "done"
-    )
-    skipped_n = sum(
-        1 for p, ms in [("p1", p1_meals), ("p2", p2_meals)]
-        for i in range(len(ms))
-        if day_ent.get(tk(d, p, i), {}).get("status", "pending") == "skipped"
-    )
-    total_n   = len(p1_meals) + len(p2_meals)
+    # ── Per-person stats ───────────────────────────────────
+    done_n    = sum(1 for i in range(len(meals))
+                   if day_ent.get(tk(d, person, i), {}).get("status") == "done")
+    skipped_n = sum(1 for i in range(len(meals))
+                   if day_ent.get(tk(d, person, i), {}).get("status") == "skipped")
+    total_n   = len(meals)
     tracked_n = done_n + skipped_n
     pct       = round(tracked_n / total_n * 100) if total_n else 0
     label     = "Today" if d == TODAY else d.strftime("%A, %d %b %Y")
@@ -999,14 +972,68 @@ def page_tracker():
         f'<div class="nt-progress-label">{label} · {tracked_n} of {total_n} meals tracked</div>',
         unsafe_allow_html=True)
 
+    # ── Per-person monthly calendar ────────────────────────
+    cal_y_key = f"cal_year_{person}"
+    cal_m_key = f"cal_month_{person}"
+    with st.expander("📅  Monthly overview", expanded=False):
+        y, m = st.session_state.get(cal_y_key, TODAY.year), st.session_state.get(cal_m_key, TODAY.month)
+        with st.spinner("Loading calendar…"):
+            all_t = load_all_tracking()
+        nc1, nc2, nc3 = st.columns([1, 4, 1])
+        with nc1:
+            if st.button("◀", key=f"cp_{person}", use_container_width=True):
+                if m == 1: st.session_state[cal_y_key] -= 1; st.session_state[cal_m_key] = 12
+                else:      st.session_state[cal_m_key] -= 1
+                st.rerun(scope="fragment")
+        with nc2:
+            st.markdown(f'<div class="nt-cal-month" style="text-align:center;padding-top:6px">' +
+                        f'{cal_lib.month_name[m]} {y}</div>', unsafe_allow_html=True)
+        with nc3:
+            if (y, m) < (TODAY.year, TODAY.month):
+                if st.button("▶", key=f"cn_{person}", use_container_width=True):
+                    if m == 12: st.session_state[cal_y_key] += 1; st.session_state[cal_m_key] = 1
+                    else:       st.session_state[cal_m_key] += 1
+                    st.rerun(scope="fragment")
+        # Per-person calendar: color based on that person's meals only
+        st.markdown(calendar_html_person(y, m, all_t, d, person), unsafe_allow_html=True)
+
+    # ── Meals ──────────────────────────────────────────────
+    st.markdown(person_header(person), unsafe_allow_html=True)
+    for i, meal in enumerate(meals):
+        meal_card_crud(d, person, i, meal, meals, day_ent, is_future)
+    add_meal_form(d, person, meals)
+    if not is_future:
+        render_snacks(d, person)
+
+
+def page_tracker():
+    for k, v in [("sel_date", TODAY), ("cal_year_p1", TODAY.year), ("cal_month_p1", TODAY.month),
+                 ("cal_year_p2", TODAY.year), ("cal_month_p2", TODAY.month)]:
+        if k not in st.session_state: st.session_state[k] = v
+
+    sel = st.date_input("Select date", value=st.session_state.sel_date,
+                        min_value=date(2025, 1, 1), max_value=date(2026, 9, 30),
+                        label_visibility="collapsed")
+    if sel != st.session_state.sel_date:
+        old_sk = f"_de_{st.session_state.sel_date.isoformat()}"
+        if old_sk in st.session_state:
+            del st.session_state[old_sk]
+        st.session_state.update(sel_date=sel,
+                                cal_year_p1=sel.year, cal_month_p1=sel.month,
+                                cal_year_p2=sel.year, cal_month_p2=sel.month)
+        st.rerun()
+
+    d         = st.session_state.sel_date
+    day_name  = DAYS[d.weekday()]
+    is_future = d > TODAY
+    pv        = st.session_state.get("_plan_version", 0)
+
     t1, t2 = st.tabs(["👤  Person 1 · Veg", "🏃  Person 2 · Runner"])
 
-    pv = st.session_state.get("_plan_version", 0)
     with t1:
-        render_person_meals(d, "p1", is_future, pv)
-
+        render_person_tab(d, "p1", is_future, pv)
     with t2:
-        render_person_meals(d, "p2", is_future, pv)
+        render_person_tab(d, "p2", is_future, pv)
 
 
 # ── Page: Measurements ─────────────────────────────────────
